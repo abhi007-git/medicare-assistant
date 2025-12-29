@@ -259,9 +259,18 @@ class MediCareApp {
     // ========================================================================
     
     handleVoiceCommand(command) {
-        // Stop command - interrupt speech immediately
+        // Stop command - interrupt ALL speech and processes immediately
         if (command.includes('stop') || command.includes('quiet')) {
             window.speechSynthesis.cancel();
+            this.isSpeaking = false;
+            // Stop any active form filling
+            if (this.formActive) {
+                this.formActive = false;
+            }
+            // Stop reader if active
+            if (this.readerActive) {
+                this.stopReader();
+            }
             return;
         }
         
@@ -390,7 +399,8 @@ class MediCareApp {
                 this.speak('Home screen');
                 break;
             case 'form':
-                this.speak('Voice form screen. Say Start Form Filling to begin.');
+                this.resetForm();
+                this.speak('Voice form screen. Say Start to begin filling.');
                 break;
             case 'queue':
                 this.initQueue();
@@ -867,49 +877,38 @@ class MediCareApp {
     }
     
     startOCRDetection() {
-        // Simulate text detection every 4 seconds
+        // Real OCR detection - only speaks if actual text is detected
+        // Note: This requires actual OCR implementation (Tesseract.js or similar)
+        // For now, this function will remain silent unless real text is detected
+        // Developers should integrate actual OCR library here
+        
         if (!this.readerActive) return;
         
+        // TODO: Implement real OCR detection using Tesseract.js or similar
+        // Example integration:
+        // const video = document.querySelector('#reader-camera');
+        // const canvas = document.createElement('canvas');
+        // canvas.getContext('2d').drawImage(video, 0, 0);
+        // Tesseract.recognize(canvas).then(result => {
+        //     if (result.data.text.trim()) {
+        //         this.handleDetectedText(result.data.text);
+        //     }
+        // });
+        
+        // For demonstration: Silent unless real OCR is implemented
         setTimeout(() => {
             if (this.readerActive) {
-                // Hospital-specific terminology only
-                const hospitalTexts = [
-                    'Radiology Department',
-                    'Emergency Exit',
-                    'Pharmacy',
-                    'Cardiology Ward',
-                    'Registration Counter',
-                    'Waiting Area',
-                    'Orthopedics Department',
-                    'Pediatrics Ward',
-                    'Neurology Department',
-                    'ICU - Intensive Care Unit',
-                    'Operation Theater',
-                    'Laboratory',
-                    'Blood Bank',
-                    'X-Ray Room',
-                    'CT Scan Room',
-                    'MRI Room',
-                    'Consultation Room',
-                    'Vaccination Center',
-                    'Cafeteria',
-                    'Restrooms',
-                    'Elevator',
-                    'Stairs',
-                    'Reception Desk',
-                    'Ambulance Entrance',
-                    'Visitor Parking'
-                ];
-                
-                const detected = hospitalTexts[Math.floor(Math.random() * hospitalTexts.length)];
-                this.handleDetectedText(detected);
-                
-                this.startOCRDetection(); // Continue detection
+                this.startOCRDetection(); // Continue checking
             }
-        }, 4000);
+        }, 2000);
     }
     
     handleDetectedText(text) {
+        // Only process if text actually exists
+        if (!text || text.trim().length === 0) {
+            return; // Silent - no text detected
+        }
+        
         // Filter: Only announce hospital-related text
         const hospitalKeywords = [
             'department', 'ward', 'room', 'emergency', 'radiology', 'cardiology',
@@ -917,22 +916,23 @@ class MediCareApp {
             'reception', 'registration', 'icu', 'operation', 'theater', 'exit',
             'entrance', 'waiting', 'consultation', 'vaccination', 'blood bank',
             'x-ray', 'ct scan', 'mri', 'ambulance', 'cafeteria', 'restroom',
-            'elevator', 'stairs', 'parking'
+            'elevator', 'stairs', 'parking', 'hospital', 'clinic', 'medical'
         ];
         
         const lowerText = text.toLowerCase();
         const isHospitalRelated = hospitalKeywords.some(keyword => lowerText.includes(keyword));
         
         if (!isHospitalRelated) {
+            // Text detected but not hospital-related
             this.speak('Invalid. This is not a hospital sign.');
-            document.querySelector('#reader-last-detection').textContent = 'Invalid text detected';
+            document.querySelector('#reader-last-detection').textContent = 'Invalid: Non-hospital text';
             return;
         }
         
-        if (isHospitalRelated) {
-            document.querySelector('#reader-text').textContent = text;
-            this.speak(text, true);
-        }
+        // Valid hospital text - speak it exactly as shown
+        document.querySelector('#reader-text').textContent = text;
+        document.querySelector('#reader-last-detection').textContent = text;
+        this.speak(text, true);
     }
     
     speakLastDetection() {
