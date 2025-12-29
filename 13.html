@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Camera Permission Denied</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#2b7cee",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101822",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        /* Custom scrollbar hiding for cleaner mobile look */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-white font-display antialiased overflow-hidden">
+<div class="relative flex h-full min-h-screen w-full flex-col overflow-hidden max-w-md mx-auto shadow-2xl bg-background-light dark:bg-background-dark">
+<!-- TopAppBar -->
+<div class="flex items-center px-4 py-4 justify-between z-10">
+<button class="text-slate-900 dark:text-white flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors">
+<span class="material-symbols-outlined text-2xl">arrow_back</span>
+</button>
+<h2 class="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center">Scan Ticket</h2>
+<button class="text-slate-900 dark:text-white flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors">
+<span class="material-symbols-outlined text-2xl">help</span>
+</button>
+</div>
+<!-- Main Content (EmptyState / Error State) -->
+<div class="flex-1 flex flex-col items-center justify-center px-6 pb-20 pt-8 animate-fade-in">
+<!-- Visual Indicator -->
+<div class="relative mb-8 group">
+<!-- Abstract background glow -->
+<div class="absolute inset-0 bg-primary/20 blur-3xl rounded-full transform scale-150"></div>
+<div class="relative flex items-center justify-center size-32 rounded-full bg-slate-200 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 shadow-xl">
+<span class="material-symbols-outlined text-slate-400 dark:text-slate-500 text-[64px]">no_photography</span>
+<!-- Status Badge -->
+<div class="absolute -bottom-1 -right-1 bg-red-500 rounded-full p-2 border-4 border-background-light dark:border-background-dark flex items-center justify-center">
+<span class="material-symbols-outlined text-white text-lg font-bold">lock</span>
+</div>
+</div>
+</div>
+<!-- Text Content -->
+<div class="flex flex-col items-center gap-3 text-center mb-10 max-w-[320px]">
+<h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Camera Access Required</h1>
+<p class="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">
+                    We need access to your camera to scan your appointment QR code. This helps us check you into the hospital queue instantly.
+                </p>
+</div>
+<!-- Actions -->
+<div class="flex flex-col w-full max-w-[320px] gap-4">
+<!-- Primary Action -->
+<button class="flex w-full cursor-pointer items-center justify-center overflow-hidden rounded-xl h-12 px-6 bg-primary hover:bg-blue-600 transition-all active:scale-95 text-white shadow-lg shadow-primary/25">
+<span class="text-sm font-bold leading-normal tracking-[0.015em]">Go to Settings</span>
+</button>
+<!-- Secondary Action (SingleButton) -->
+<button class="flex w-full cursor-pointer items-center justify-center overflow-hidden rounded-xl h-12 px-6 bg-transparent border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-white transition-all active:scale-95">
+<span class="text-sm font-semibold leading-normal tracking-[0.015em]">Enter Code Manually</span>
+</button>
+</div>
+<!-- Help Text -->
+<p class="mt-8 text-xs text-slate-400 text-center max-w-[280px]">
+                Ensure permissions are set to "While Using the App" in your device settings.
+            </p>
+</div>
+<!-- BottomNavBar -->
+<div class="flex gap-2 border-t border-slate-200 dark:border-slate-800 bg-background-light dark:bg-[#151e2b] px-6 pb-8 pt-3">
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-slate-400 dark:text-[#92a9c9] hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-2xl">list_alt</span>
+<p class="text-[10px] font-medium leading-normal tracking-[0.015em]">My Queue</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-primary" href="#">
+<div class="flex h-8 items-center justify-center rounded-full bg-primary/10 px-4 py-1">
+<span class="material-symbols-outlined text-2xl fill-1">qr_code_scanner</span>
+</div>
+<p class="text-[10px] font-bold leading-normal tracking-[0.015em]">Scan</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-slate-400 dark:text-[#92a9c9] hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-2xl">account_circle</span>
+<p class="text-[10px] font-medium leading-normal tracking-[0.015em]">Profile</p>
+</a>
+</div>
+</div>
+</body></html>

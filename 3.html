@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Camera OCR Accessibility Screen</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#137fec",
+                        "primary-content": "#ffffff",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#111a22",
+                        "surface-dark": "#1c2936",
+                        "surface-highlight": "#2a3b4d",
+                        "success": "#2ecc71",
+                        "error": "#ef4444",
+                    },
+                    fontFamily: {
+                        "display": ["Lexend", "sans-serif"],
+                        "body": ["Lexend", "sans-serif"],
+                    },
+                    borderRadius: {"DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem", "2xl": "2rem", "full": "9999px"},
+                    animation: {
+                        'pulse-border': 'pulse-border 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    },
+                    keyframes: {
+                        'pulse-border': {
+                            '0%, 100%': { borderColor: 'rgba(46, 204, 113, 0.4)' },
+                            '50%': { borderColor: 'rgba(46, 204, 113, 1)' },
+                        }
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom scrollbar hide for cleaner look */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        
+        /* Reticle styling */
+        .reticle-corner {
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            border-color: rgba(255, 255, 255, 0.8);
+            border-style: solid;
+        }
+        .tl { top: 0; left: 0; border-width: 3px 0 0 3px; border-top-left-radius: 8px; }
+        .tr { top: 0; right: 0; border-width: 3px 3px 0 0; border-top-right-radius: 8px; }
+        .bl { bottom: 0; left: 0; border-width: 0 0 3px 3px; border-bottom-left-radius: 8px; }
+        .br { bottom: 0; right: 0; border-width: 0 3px 3px 0; border-bottom-right-radius: 8px; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-dark text-white font-display overflow-hidden h-screen w-full flex flex-col">
+<!-- Viewfinder Area (Top 60%) -->
+<div class="relative w-full h-[58vh] bg-black group shrink-0">
+<!-- Camera Feed Simulation -->
+<div class="absolute inset-0 w-full h-full bg-cover bg-center opacity-80" data-alt="Hospital hallway perspective used as camera viewfinder background" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuChlp-eTogx7eVi4gasnmId0BXgEGk5Fj0cHV0vNX19yhwwESaYkyvFva-XbM7EOVbM3aVOGjX6vsuYwVHWJwm4MLTIkkXT2Cdp02cshVy2mC7NgjWMPFYvlt9bNYYyMyisNiMNA_3u2f7Qsg72HzF1nbd7if-kWHoRv0mnlUxH0r86o0I8RLgGa2rluWEt7kvzFGyyu8IwBcwUySxVqdKDudBHYqd_E7yroX6eOJSVdEeCi2QE9H_LZZj4pxjqk09Lelt7PBpx5p3Z');">
+</div>
+<!-- Dark Overlay Gradient for better UI visibility at top -->
+<div class="absolute inset-0 bg-gradient-to-b from-black/80 via-transparent to-black/60 pointer-events-none"></div>
+<!-- Scanning Pulse Border (Active State) -->
+<div class="absolute inset-4 rounded-3xl border-4 border-success/60 animate-pulse-border pointer-events-none z-10"></div>
+<!-- Top Controls Overlay -->
+<div class="absolute top-0 left-0 right-0 p-4 pt-12 flex items-center justify-between z-20">
+<!-- Settings Button -->
+<button aria-label="Settings" class="flex items-center justify-center size-12 rounded-full bg-black/40 backdrop-blur-md border border-white/10 hover:bg-black/60 active:scale-95 transition-all text-white">
+<span class="material-symbols-outlined text-[28px]">settings</span>
+</button>
+<!-- Status Badge -->
+<div class="flex items-center gap-2 px-5 h-10 rounded-full bg-black/60 backdrop-blur-md border border-success/30 shadow-lg">
+<div class="size-2.5 rounded-full bg-success animate-pulse"></div>
+<span class="text-sm font-bold tracking-wide uppercase text-success">Scanning...</span>
+</div>
+<!-- Flash Toggle -->
+<button aria-label="Toggle Flash" class="flex items-center justify-center size-12 rounded-full bg-black/40 backdrop-blur-md border border-white/10 hover:bg-black/60 active:scale-95 transition-all text-white">
+<span class="material-symbols-outlined text-[28px]">flash_on</span>
+</button>
+</div>
+<!-- Focus Reticle (Visual Aid) -->
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-32 pointer-events-none opacity-80">
+<div class="reticle-corner tl"></div>
+<div class="reticle-corner tr"></div>
+<div class="reticle-corner bl"></div>
+<div class="reticle-corner br"></div>
+<!-- Center point -->
+<div class="absolute top-1/2 left-1/2 size-1.5 bg-white rounded-full -translate-x-1/2 -translate-y-1/2 shadow-lg"></div>
+</div>
+<!-- Instruction Text (Fading) -->
+<div class="absolute bottom-6 w-full text-center pointer-events-none">
+<p class="text-white/80 text-sm font-medium bg-black/30 backdrop-blur-sm inline-block px-4 py-1.5 rounded-lg">Hold steady on text</p>
+</div>
+</div>
+<!-- Bottom Controls & Results Panel -->
+<div class="flex-1 bg-surface-dark w-full relative z-20 rounded-t-3xl -mt-6 shadow-[0_-8px_30px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden">
+<!-- Drag Handle / Visual Indicator -->
+<div class="w-full flex justify-center pt-3 pb-1">
+<div class="w-12 h-1.5 rounded-full bg-white/20"></div>
+</div>
+<!-- Main Content Scroll Area -->
+<div class="flex-1 overflow-y-auto no-scrollbar px-5 pb-6 flex flex-col gap-5">
+<!-- Detected Text Card -->
+<div class="mt-2 flex flex-col gap-3">
+<div class="flex items-center justify-between px-1">
+<span class="text-gray-400 text-sm font-medium uppercase tracking-wider">Detected Text</span>
+<button class="text-primary hover:text-primary/80 text-sm font-bold flex items-center gap-1">
+<span class="material-symbols-outlined text-[18px]">content_copy</span>
+                        Copy
+                    </button>
+</div>
+<div class="bg-background-dark border border-white/10 rounded-2xl p-5 shadow-inner min-h-[140px] flex flex-col justify-between group active:border-primary/50 transition-colors">
+<p class="text-white text-2xl font-semibold leading-relaxed tracking-wide">
+                        Radiology Department <br/>
+<span class="text-primary font-bold">Room 302</span>
+</p>
+<div class="flex justify-between items-end mt-4">
+<span class="text-xs text-gray-500 font-mono">Confidence: 98%</span>
+<button aria-label="Read Aloud" class="size-10 flex items-center justify-center rounded-full bg-surface-highlight hover:bg-white/20 text-white transition-colors">
+<span class="material-symbols-outlined">volume_up</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Primary Actions -->
+<div class="flex flex-col gap-4 mt-1">
+<!-- Start/Stop Toggle -->
+<button class="relative w-full h-16 rounded-xl bg-error hover:bg-red-600 text-white font-bold text-lg tracking-wide shadow-lg flex items-center justify-center gap-3 transition-all active:scale-[0.98]">
+<span class="material-symbols-outlined text-[28px] animate-pulse">stop_circle</span>
+                    Stop Scanning
+                </button>
+<!-- Secondary Actions Row -->
+<div class="grid grid-cols-2 gap-4">
+<button class="h-14 rounded-xl bg-surface-highlight hover:bg-white/10 text-white font-semibold text-base flex items-center justify-center gap-2 border border-white/5 active:scale-[0.98] transition-all">
+<span class="material-symbols-outlined text-primary">replay</span>
+                        Repeat Last
+                    </button>
+<button class="h-14 rounded-xl bg-surface-highlight hover:bg-white/10 text-white font-semibold text-base flex items-center justify-center gap-2 border border-white/5 active:scale-[0.98] transition-all">
+<span class="material-symbols-outlined text-gray-400">science</span>
+                        Simulate
+                    </button>
+</div>
+</div>
+<!-- Activity Log (Collapsible / Preview) -->
+<div class="mt-4 border-t border-white/10 pt-4">
+<div class="flex items-center justify-between mb-3 cursor-pointer">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-gray-400 text-sm">history</span>
+<span class="text-gray-300 font-semibold text-sm">Recent Activity</span>
+</div>
+<button class="text-xs text-gray-500 hover:text-white uppercase font-bold">Clear Log</button>
+</div>
+<div class="flex flex-col gap-2">
+<!-- Log Item 1 -->
+<div class="flex items-start gap-3 p-3 rounded-lg bg-background-dark/50 border border-white/5">
+<div class="mt-1 size-2 rounded-full bg-primary shrink-0"></div>
+<div class="flex-1 min-w-0">
+<p class="text-sm font-medium text-white truncate">Radiology Dept - Room 302</p>
+<p class="text-xs text-gray-500 mt-0.5">10:42 AM • High Confidence</p>
+</div>
+</div>
+<!-- Log Item 2 -->
+<div class="flex items-start gap-3 p-3 rounded-lg bg-background-dark/50 border border-white/5 opacity-60">
+<div class="mt-1 size-2 rounded-full bg-gray-600 shrink-0"></div>
+<div class="flex-1 min-w-0">
+<p class="text-sm font-medium text-white truncate">Main Entrance - North Wing</p>
+<p class="text-xs text-gray-500 mt-0.5">10:38 AM</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</body></html>

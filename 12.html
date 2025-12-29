@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Network Error - Queue Status</title>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind Config -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#2b7cee",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101822",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-white antialiased">
+<div class="relative flex h-screen w-full flex-col overflow-hidden">
+<!-- Top App Bar -->
+<div class="flex items-center px-4 py-3 justify-between z-10">
+<button class="text-slate-900 dark:text-white flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h2 class="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center pr-10">
+                Queue Status
+            </h2>
+</div>
+<!-- Main Content Area: Centered Error State -->
+<div class="flex flex-1 flex-col items-center justify-center px-6 w-full max-w-md mx-auto h-full -mt-10">
+<!-- Icon / Illustration Area -->
+<div class="relative mb-8 flex items-center justify-center">
+<!-- Subtle glow effect -->
+<div class="absolute w-32 h-32 bg-primary/20 rounded-full blur-2xl"></div>
+<div class="relative z-10 flex h-32 w-32 items-center justify-center rounded-full bg-slate-200 dark:bg-slate-800/50">
+<span class="material-symbols-outlined text-6xl text-slate-500 dark:text-slate-400">wifi_off</span>
+</div>
+</div>
+<!-- Text Content -->
+<div class="flex flex-col items-center gap-3 text-center mb-10">
+<h1 class="text-2xl font-bold leading-tight tracking-tight text-slate-900 dark:text-white">
+                    No Internet Connection
+                </h1>
+<p class="text-slate-600 dark:text-slate-400 text-base font-normal leading-relaxed max-w-[320px]">
+                    We can't update your position in the queue right now. Please check your signal and try again.
+                </p>
+</div>
+<!-- Actions -->
+<div class="flex flex-col gap-4 w-full max-w-xs">
+<!-- Retry Button -->
+<button class="flex w-full cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-xl h-12 px-6 bg-primary hover:bg-primary/90 active:bg-primary/95 text-white transition-all shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined text-[20px]">refresh</span>
+<span class="text-base font-bold tracking-wide">Retry Connection</span>
+</button>
+<!-- Support Button (Secondary) -->
+<button class="flex w-full cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-xl h-12 px-6 bg-transparent hover:bg-slate-200 dark:hover:bg-slate-800 text-primary dark:text-primary transition-colors border border-transparent hover:border-slate-300 dark:hover:border-slate-700">
+<span class="material-symbols-outlined text-[20px]">call</span>
+<span class="text-sm font-semibold">Call Hospital Support</span>
+</button>
+</div>
+</div>
+<!-- Last Updated Meta Info (Bottom) -->
+<div class="pb-8 pt-4 w-full">
+<div class="flex items-center justify-center gap-2">
+<span class="h-2 w-2 rounded-full bg-red-500"></span>
+<p class="text-slate-500 dark:text-slate-500 text-xs font-medium text-center">
+                    Offline • Last updated: 12 mins ago
+                </p>
+</div>
+</div>
+</div>
+</body></html>

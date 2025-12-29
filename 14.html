@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Microphone Permission Denied</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Config -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#2b7cee",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101822",
+                        "surface-dark": "#1A2634", // Slightly lighter for cards/surfaces
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "2xl": "1rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display antialiased">
+<!-- Main Container -->
+<div class="relative flex h-full min-h-screen w-full flex-col overflow-hidden max-w-md mx-auto shadow-2xl bg-background-light dark:bg-background-dark">
+<!-- Top Bar -->
+<div class="flex items-center px-4 py-4 justify-between z-10">
+<button class="text-gray-900 dark:text-white flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-gray-200 dark:hover:bg-white/10 transition-colors">
+<span class="material-symbols-outlined text-2xl">close</span>
+</button>
+<div class="flex items-center justify-end">
+<button class="text-gray-500 dark:text-[#92a9c9] text-sm font-semibold hover:text-primary transition-colors">Help</button>
+</div>
+</div>
+<!-- Main Content Area -->
+<div class="flex-1 flex flex-col items-center justify-center px-6 pb-12 pt-4">
+<!-- Hero Icon -->
+<div class="relative mb-8 group">
+<!-- Outer glow effect -->
+<div class="absolute inset-0 bg-primary/20 rounded-full blur-xl scale-110 group-hover:scale-125 transition-transform duration-700"></div>
+<!-- Icon container -->
+<div class="relative flex items-center justify-center size-32 rounded-full bg-surface-dark border border-gray-700/50 shadow-xl">
+<span class="material-symbols-outlined text-[64px] text-primary">mic_off</span>
+</div>
+<!-- Small Badge -->
+<div class="absolute -bottom-1 -right-1 flex items-center justify-center size-10 rounded-full bg-[#1A2634] border-4 border-background-dark">
+<span class="material-symbols-outlined text-xl text-red-400">lock</span>
+</div>
+</div>
+<!-- Text Content -->
+<div class="flex flex-col items-center gap-3 text-center mb-10">
+<h1 class="text-gray-900 dark:text-white text-2xl font-bold tracking-tight leading-tight">
+                    Microphone Access Needed
+                </h1>
+<p class="text-gray-600 dark:text-[#92a9c9] text-base leading-relaxed max-w-[320px]">
+                    To use voice check-in for the hospital queue, this app needs access to your microphone.
+                </p>
+</div>
+<!-- Steps Visualization (Subtle) -->
+<div class="w-full max-w-[320px] bg-white/5 dark:bg-surface-dark/50 rounded-xl p-4 mb-10 border border-gray-200 dark:border-gray-800">
+<div class="flex items-center gap-3 mb-3 last:mb-0">
+<div class="flex items-center justify-center size-8 rounded-full bg-primary/10 shrink-0">
+<span class="material-symbols-outlined text-sm text-primary">settings</span>
+</div>
+<div class="text-sm text-gray-700 dark:text-gray-300">Open <strong>Settings</strong></div>
+</div>
+<div class="w-0.5 h-3 bg-gray-200 dark:bg-gray-700 ml-4 mb-1"></div>
+<div class="flex items-center gap-3">
+<div class="flex items-center justify-center size-8 rounded-full bg-primary/10 shrink-0">
+<span class="material-symbols-outlined text-sm text-primary">toggle_on</span>
+</div>
+<div class="text-sm text-gray-700 dark:text-gray-300">Enable <strong>Microphone</strong></div>
+</div>
+</div>
+<!-- Actions -->
+<div class="w-full flex flex-col gap-3 max-w-[320px]">
+<button class="relative w-full h-12 flex items-center justify-center bg-primary hover:bg-primary/90 active:scale-[0.98] transition-all rounded-xl text-white font-bold text-sm tracking-wide shadow-lg shadow-primary/25">
+                    Go to Settings
+                </button>
+<button class="w-full h-12 flex items-center justify-center bg-transparent hover:bg-gray-100 dark:hover:bg-white/5 active:scale-[0.98] transition-all rounded-xl text-gray-600 dark:text-gray-400 font-semibold text-sm">
+                    Not Now
+                </button>
+</div>
+</div>
+<!-- Privacy Note Footer -->
+<div class="w-full p-6 text-center">
+<p class="text-xs text-gray-400 dark:text-gray-600 flex items-center justify-center gap-1.5">
+<span class="material-symbols-outlined text-sm">security</span>
+                Your privacy is always protected.
+            </p>
+</div>
+</div>
+</body></html>

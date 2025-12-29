@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Hospital Accessibility Settings</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#137fec",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                        "surface-light": "#ffffff",
+                        "surface-dark": "#1c2a36",
+                        "input-light": "#f1f5f9",
+                        "input-dark": "#192633",
+                    },
+                    fontFamily: {
+                        "display": ["Lexend", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom Range Slider Styling */
+        input[type=range] {
+            -webkit-appearance: none; 
+            background: transparent; 
+        }
+        
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 24px;
+            width: 24px;
+            border-radius: 50%;
+            background: #137fec;
+            cursor: pointer;
+            margin-top: -10px; 
+            box-shadow: 0 0 0 4px rgba(19, 127, 236, 0.2);
+        }
+
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #334155;
+            border-radius: 2px;
+        }
+
+        /* Dark/Light mode overrides for slider track */
+        .dark input[type=range]::-webkit-slider-runnable-track {
+            background: #334155;
+        }
+        html:not(.dark) input[type=range]::-webkit-slider-runnable-track {
+            background: #cbd5e1;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display antialiased transition-colors duration-200">
+<div class="relative flex h-full min-h-screen w-full flex-col overflow-x-hidden">
+<!-- Top App Bar -->
+<header class="sticky top-0 z-10 flex items-center bg-surface-light dark:bg-background-dark p-4 pb-2 justify-between border-b border-slate-200 dark:border-slate-800 shadow-sm">
+<button aria-label="Go Back" class="text-slate-900 dark:text-white flex size-12 shrink-0 items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+<span class="material-symbols-outlined" style="font-size: 24px;">arrow_back</span>
+</button>
+<h2 class="text-slate-900 dark:text-white text-xl font-bold leading-tight tracking-[-0.015em] flex-1 text-center pr-12">Settings</h2>
+</header>
+<main class="flex-1 flex flex-col gap-6 p-4 max-w-3xl mx-auto w-full pb-24">
+<!-- Voice Settings Section -->
+<section>
+<div class="flex items-center gap-2 px-1 pb-3">
+<span class="material-symbols-outlined text-primary">record_voice_over</span>
+<h3 class="text-slate-500 dark:text-slate-400 text-sm font-bold tracking-wider uppercase">Voice Assistant</h3>
+</div>
+<div class="flex flex-col gap-4 bg-surface-light dark:bg-surface-dark p-5 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
+<!-- Speed Slider -->
+<div class="flex flex-col gap-3">
+<div class="flex justify-between items-center">
+<label class="text-slate-900 dark:text-white font-medium text-lg">Voice Speed</label>
+<span class="text-primary font-bold">1.0x</span>
+</div>
+<input aria-label="Voice Speed" class="w-full h-10" max="2" min="0.5" step="0.1" type="range" value="1.0"/>
+<div class="flex justify-between text-xs text-slate-500 dark:text-slate-400 font-medium px-1">
+<span>Slow</span>
+<span>Fast</span>
+</div>
+</div>
+<hr class="border-slate-200 dark:border-slate-700"/>
+<!-- Volume Slider -->
+<div class="flex flex-col gap-3">
+<div class="flex justify-between items-center">
+<label class="text-slate-900 dark:text-white font-medium text-lg">Volume</label>
+<span class="text-primary font-bold">80%</span>
+</div>
+<input aria-label="Volume" class="w-full h-10" max="100" min="0" step="5" type="range" value="80"/>
+</div>
+<hr class="border-slate-200 dark:border-slate-700"/>
+<!-- Language & Test -->
+<div class="flex flex-col gap-4">
+<label class="flex flex-col w-full">
+<span class="text-slate-900 dark:text-white font-medium text-lg mb-2">Language</span>
+<div class="relative">
+<select class="w-full h-14 bg-input-light dark:bg-input-dark border-slate-300 dark:border-slate-600 rounded-xl px-4 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent text-base appearance-none">
+<option>English (US)</option>
+<option>English (UK)</option>
+<option>Spanish (ES)</option>
+<option>French (FR)</option>
+</select>
+<div class="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-slate-500">
+<span class="material-symbols-outlined">expand_more</span>
+</div>
+</div>
+</label>
+<button class="flex items-center justify-center gap-2 h-12 w-full rounded-xl bg-primary/10 text-primary font-bold hover:bg-primary/20 transition-colors">
+<span class="material-symbols-outlined">play_circle</span>
+                            Test Voice
+                        </button>
+</div>
+</div>
+</section>
+<!-- Accessibility Section -->
+<section>
+<div class="flex items-center gap-2 px-1 pb-3">
+<span class="material-symbols-outlined text-primary">accessibility_new</span>
+<h3 class="text-slate-500 dark:text-slate-400 text-sm font-bold tracking-wider uppercase">Accessibility</h3>
+</div>
+<div class="flex flex-col bg-surface-light dark:bg-surface-dark rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden divide-y divide-slate-200 dark:divide-slate-700">
+<!-- Text Size -->
+<div class="p-5 flex flex-col gap-3">
+<label class="text-slate-900 dark:text-white font-medium text-lg">Text Size</label>
+<div class="flex bg-input-light dark:bg-input-dark p-1 rounded-lg">
+<button class="flex-1 py-2 text-sm font-medium text-slate-500 dark:text-slate-400 rounded-md hover:bg-white dark:hover:bg-slate-700">S</button>
+<button class="flex-1 py-2 text-base font-bold text-slate-900 dark:text-white bg-white dark:bg-slate-600 shadow-sm rounded-md">M</button>
+<button class="flex-1 py-2 text-lg font-medium text-slate-500 dark:text-slate-400 rounded-md hover:bg-white dark:hover:bg-slate-700">L</button>
+<button class="flex-1 py-2 text-xl font-medium text-slate-500 dark:text-slate-400 rounded-md hover:bg-white dark:hover:bg-slate-700">XL</button>
+</div>
+</div>
+<!-- Toggles List -->
+<div class="p-4 flex items-center justify-between">
+<div class="flex flex-col">
+<span class="text-slate-900 dark:text-white font-medium text-lg">High Contrast</span>
+<span class="text-slate-500 dark:text-slate-400 text-sm">Increases legibility</span>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox" value=""/>
+<div class="w-14 h-8 bg-slate-300 dark:bg-slate-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+<div class="p-4 flex items-center justify-between">
+<div class="flex flex-col">
+<span class="text-slate-900 dark:text-white font-medium text-lg">Screen Reader Optimized</span>
+<span class="text-slate-500 dark:text-slate-400 text-sm">Simplified layout</span>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox" value=""/>
+<div class="w-14 h-8 bg-slate-300 dark:bg-slate-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+<div class="p-4 flex items-center justify-between">
+<div class="flex flex-col">
+<span class="text-slate-900 dark:text-white font-medium text-lg">Reduce Motion</span>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox" value=""/>
+<div class="w-14 h-8 bg-slate-300 dark:bg-slate-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+</div>
+</section>
+<!-- Display Section -->
+<section>
+<div class="flex items-center gap-2 px-1 pb-3">
+<span class="material-symbols-outlined text-primary">palette</span>
+<h3 class="text-slate-500 dark:text-slate-400 text-sm font-bold tracking-wider uppercase">Display</h3>
+</div>
+<div class="flex flex-col bg-surface-light dark:bg-surface-dark p-5 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 gap-4">
+<div class="flex flex-col gap-3">
+<label class="text-slate-900 dark:text-white font-medium text-lg">Theme</label>
+<div class="grid grid-cols-3 gap-3">
+<label class="cursor-pointer">
+<input class="peer sr-only" name="theme" type="radio"/>
+<div class="flex flex-col items-center gap-2 p-3 rounded-lg border-2 border-slate-200 dark:border-slate-700 peer-checked:border-primary peer-checked:bg-primary/5 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">
+<span class="material-symbols-outlined text-slate-400 peer-checked:text-primary">light_mode</span>
+<span class="text-sm font-medium text-slate-700 dark:text-slate-300">Light</span>
+</div>
+</label>
+<label class="cursor-pointer">
+<input checked="" class="peer sr-only" name="theme" type="radio"/>
+<div class="flex flex-col items-center gap-2 p-3 rounded-lg border-2 border-slate-200 dark:border-slate-700 peer-checked:border-primary peer-checked:bg-primary/5 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">
+<span class="material-symbols-outlined text-slate-400 peer-checked:text-primary">dark_mode</span>
+<span class="text-sm font-medium text-slate-700 dark:text-slate-300">Dark</span>
+</div>
+</label>
+<label class="cursor-pointer">
+<input class="peer sr-only" name="theme" type="radio"/>
+<div class="flex flex-col items-center gap-2 p-3 rounded-lg border-2 border-slate-200 dark:border-slate-700 peer-checked:border-primary peer-checked:bg-primary/5 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">
+<span class="material-symbols-outlined text-slate-400 peer-checked:text-primary">contrast</span>
+<span class="text-sm font-medium text-slate-700 dark:text-slate-300">Auto</span>
+</div>
+</label>
+</div>
+</div>
+</div>
+</section>
+<!-- Notifications Section -->
+<section>
+<div class="flex items-center gap-2 px-1 pb-3">
+<span class="material-symbols-outlined text-primary">notifications</span>
+<h3 class="text-slate-500 dark:text-slate-400 text-sm font-bold tracking-wider uppercase">Notifications</h3>
+</div>
+<div class="flex flex-col bg-surface-light dark:bg-surface-dark rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden divide-y divide-slate-200 dark:divide-slate-700">
+<div class="p-4 flex items-center justify-between">
+<span class="text-slate-900 dark:text-white font-medium text-lg">Queue Alerts</span>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox" value=""/>
+<div class="w-14 h-8 bg-slate-300 dark:bg-slate-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+<div class="p-4 flex items-center justify-between">
+<span class="text-slate-900 dark:text-white font-medium text-lg">Sound</span>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox" value=""/>
+<div class="w-14 h-8 bg-slate-300 dark:bg-slate-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+<div class="p-4 flex items-center justify-between">
+<span class="text-slate-900 dark:text-white font-medium text-lg">Vibration</span>
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox" value=""/>
+<div class="w-14 h-8 bg-slate-300 dark:bg-slate-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+</div>
+</section>
+<!-- Permissions Section -->
+<section>
+<div class="flex items-center gap-2 px-1 pb-3">
+<span class="material-symbols-outlined text-primary">lock_person</span>
+<h3 class="text-slate-500 dark:text-slate-400 text-sm font-bold tracking-wider uppercase">Permissions</h3>
+</div>
+<div class="flex flex-col bg-surface-light dark:bg-surface-dark rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden divide-y divide-slate-200 dark:divide-slate-700">
+<div class="p-4 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-slate-400">photo_camera</span>
+<span class="text-slate-900 dark:text-white font-medium text-lg">Camera</span>
+</div>
+<span class="text-emerald-500 font-bold text-sm bg-emerald-500/10 px-3 py-1 rounded-full">Active</span>
+</div>
+<div class="p-4 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-slate-400">mic</span>
+<span class="text-slate-900 dark:text-white font-medium text-lg">Microphone</span>
+</div>
+<button class="text-primary font-bold text-sm bg-primary/10 hover:bg-primary/20 transition-colors px-4 py-2 rounded-full">Allow</button>
+</div>
+<div class="p-4 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-slate-400">notifications</span>
+<span class="text-slate-900 dark:text-white font-medium text-lg">Push</span>
+</div>
+<span class="text-emerald-500 font-bold text-sm bg-emerald-500/10 px-3 py-1 rounded-full">Active</span>
+</div>
+</div>
+</section>
+<!-- API Configuration Section -->
+<section>
+<div class="flex items-center gap-2 px-1 pb-3">
+<span class="material-symbols-outlined text-primary">api</span>
+<h3 class="text-slate-500 dark:text-slate-400 text-sm font-bold tracking-wider uppercase">API Configuration</h3>
+</div>
+<div class="flex flex-col bg-surface-light dark:bg-surface-dark p-5 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 gap-6">
+<!-- Firebase -->
+<div class="flex flex-col gap-2">
+<label class="text-slate-900 dark:text-white font-medium text-base">Firebase Config</label>
+<div class="flex w-full items-stretch rounded-xl shadow-sm">
+<input class="flex w-full min-w-0 flex-1 rounded-l-xl text-slate-900 dark:text-white focus:outline-0 focus:ring-1 focus:ring-primary border border-slate-300 dark:border-slate-600 bg-input-light dark:bg-input-dark h-12 px-4 text-base" readonly="" type="password" value="safasdfasdfasdfasdf"/>
+<button class="text-slate-500 dark:text-slate-400 flex items-center justify-center px-4 border border-l-0 border-slate-300 dark:border-slate-600 bg-input-light dark:bg-input-dark rounded-r-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+<span class="material-symbols-outlined" style="font-size: 20px;">visibility_off</span>
+</button>
+</div>
+</div>
+<!-- Google Vision -->
+<div class="flex flex-col gap-2">
+<div class="flex justify-between items-center">
+<label class="text-slate-900 dark:text-white font-medium text-base">Google Vision API</label>
+<button class="text-xs font-bold text-primary hover:text-primary/80 uppercase">Test</button>
+</div>
+<input class="w-full rounded-xl text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary border border-slate-300 dark:border-slate-600 bg-input-light dark:bg-input-dark h-12 px-4 text-base shadow-sm" placeholder="Enter API Key" type="password"/>
+</div>
+<!-- Azure -->
+<div class="flex flex-col gap-4 pt-2 border-t border-slate-200 dark:border-slate-700">
+<div class="flex justify-between items-center">
+<label class="text-slate-900 dark:text-white font-medium text-base">Azure Vision</label>
+<button class="text-xs font-bold text-primary hover:text-primary/80 uppercase">Test</button>
+</div>
+<input class="w-full rounded-xl text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary border border-slate-300 dark:border-slate-600 bg-input-light dark:bg-input-dark h-12 px-4 text-base shadow-sm" placeholder="Endpoint URL" type="text"/>
+<input class="w-full rounded-xl text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary border border-slate-300 dark:border-slate-600 bg-input-light dark:bg-input-dark h-12 px-4 text-base shadow-sm" placeholder="Azure Key" type="password"/>
+</div>
+</div>
+</section>
+<!-- About & Logout Section -->
+<section class="mt-4 flex flex-col items-center gap-6">
+<div class="flex flex-col w-full bg-surface-light dark:bg-surface-dark rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden divide-y divide-slate-200 dark:divide-slate-700">
+<button class="flex items-center justify-between p-4 w-full hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+<span class="text-slate-900 dark:text-white font-medium text-lg">Help &amp; Tutorial</span>
+<span class="material-symbols-outlined text-slate-400">chevron_right</span>
+</button>
+<button class="flex items-center justify-between p-4 w-full hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+<span class="text-slate-900 dark:text-white font-medium text-lg">Privacy Policy</span>
+<span class="material-symbols-outlined text-slate-400">launch</span>
+</button>
+</div>
+<div class="flex flex-col items-center gap-4 w-full">
+<button class="w-full h-14 rounded-xl bg-red-500/10 text-red-500 dark:text-red-400 font-bold text-lg hover:bg-red-500/20 transition-colors border border-red-500/20">
+                        Log Out
+                    </button>
+<span class="text-slate-400 dark:text-slate-600 text-sm font-medium">Version 2.4.0 (Build 1024)</span>
+</div>
+</section>
+</main>
+</div>
+</body></html>

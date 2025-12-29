@@ -1,0 +1,2698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Accessibility Assistant</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/2.1.0/tesseract.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #667eea;
+            --primary-dark: #764ba2;
+            --accent: #0f8ec7;
+            --bg: #10151c;
+            --panel: #1b222c;
+            --text: #f4f4f4;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            min-height: 100vh;
+            color: var(--text);
+        }
+
+        .app-header {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1.5rem;
+            text-align: center;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .app-header h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            color: white;
+        }
+
+        .voice-status {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 1rem;
+            border-radius: 15px;
+            margin-top: 1rem;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .module-container {
+            display: none;
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .module-container.active {
+            display: block;
+        }
+
+        /* MODULE 1: Voice Form Styles */
+        .form-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        .form-container h1 {
+            text-align: center;
+            color: #667eea;
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .form-container .subtitle {
+            text-align: center;
+            color: #666;
+            font-size: 1.1em;
+            margin-bottom: 30px;
+        }
+
+        .status-container {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 30px;
+            min-height: 150px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .status-text {
+            color: white;
+            font-size: 1.3em;
+            line-height: 1.6;
+            font-weight: 500;
+            word-wrap: break-word;
+        }
+
+        .listening-indicator {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            margin: 0 auto 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .listening-indicator.active {
+            opacity: 1;
+            animation: pulse 1.5s infinite;
+        }
+
+        .mic-icon {
+            font-size: 40px;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .form-section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+
+        .form-field {
+            margin-bottom: 20px;
+        }
+
+        .form-field label {
+            display: block;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 1.1em;
+        }
+
+        .form-field input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1.1em;
+            transition: border-color 0.3s;
+            background: white;
+        }
+
+        .form-field input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-field.active input {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .voice-commands {
+            background: #e8f4f8;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .voice-commands h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+
+        .voice-commands ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .voice-commands li {
+            padding: 8px 0;
+            color: #555;
+            font-size: 1em;
+            line-height: 1.4;
+        }
+
+        .voice-commands li::before {
+            content: "🎤 ";
+            margin-right: 8px;
+        }
+
+        .error-message {
+            background: #fee;
+            border-left: 4px solid #f44;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            color: #c33;
+            display: none;
+        }
+
+        /* MODULE 2: Health Reader Styles */
+        .health-header {
+            padding: 1.25rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #0c1017;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 18px 18px 0 0;
+        }
+
+        .health-header h1 {
+            font-size: 1.2rem;
+            margin: 0;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .health-main {
+            display: grid;
+            grid-template-columns: minmax(0, 3fr) minmax(300px, 2fr);
+            gap: 1rem;
+            padding: 1rem;
+            background: var(--panel);
+            border-radius: 0 0 18px 18px;
+        }
+
+        .health-section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 18px;
+            padding: 1rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+        }
+
+        #videoPanel {
+            position: relative;
+            min-height: 400px;
+        }
+
+        video {
+            width: 100%;
+            border-radius: 12px;
+            background: #000;
+            aspect-ratio: 4 / 3;
+        }
+
+        #statusBadge {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            background: rgba(0, 0, 0, 0.7);
+            color: #36ffa5;
+            padding: 0.35rem 0.85rem;
+            border-radius: 999px;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        #recognizedText {
+            margin-top: 1rem;
+            background: rgba(15, 142, 199, 0.15);
+            border: 1px solid rgba(15, 142, 199, 0.3);
+            border-radius: 12px;
+            padding: 1rem;
+            min-height: 120px;
+            font-size: 1.1rem;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        .button-bar {
+            display: flex;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+        }
+
+        button,
+        .accent {
+            border: none;
+            border-radius: 999px;
+            background: var(--accent);
+            color: #fff;
+            padding: 0.75rem 1.4rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.18s ease, background 0.2s ease;
+        }
+
+        button:hover,
+        .accent:hover {
+            transform: translateY(-1px);
+            background: var(--accent-dark);
+        }
+
+        button.secondary {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        h2 {
+            margin-top: 0;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            opacity: 0.85;
+        }
+
+        #logList {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            max-height: 250px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        #logList li {
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 10px;
+            padding: 0.75rem;
+            font-size: 0.9rem;
+        }
+
+        #settingsModal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            padding: 1rem;
+        }
+
+        #settingsModal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #0f1520;
+            border-radius: 24px;
+            padding: 2rem;
+            width: min(500px, 100%);
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.45);
+        }
+
+        label {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+            font-size: 0.9rem;
+            letter-spacing: 0.04em;
+        }
+
+        input,
+        textarea,
+        select {
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 0.7rem 0.9rem;
+            background: rgba(255, 255, 255, 0.04);
+            color: inherit;
+            font-size: 1rem;
+        }
+
+        #testCards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 0.5rem;
+            margin-top: 0.8rem;
+        }
+
+        .sign-card {
+            background: #f0f6ff;
+            color: #0b3d68;
+            border-radius: 12px;
+            padding: 1rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            text-align: center;
+            font-size: 1.1rem;
+            border: 4px solid #0b3d68;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .hint {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.65);
+            margin: -0.3rem 0 0.8rem;
+        }
+
+        /* MODULE 3: Navigation Styles */
+        .qr-nav {
+            padding: 20px;
+        }
+
+        .qr-nav .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+        }
+
+        .qr-nav .card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            color: #333;
+        }
+
+        .qr-nav h1 {
+            font-size: 28px;
+            margin-bottom: 20px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .qr-nav #reader {
+            width: 100%;
+            border: 3px solid #667eea;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            min-height: 300px;
+            background: #f8f9fa;
+        }
+
+        .qr-nav .controls {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .qr-nav .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            background: #667eea;
+            color: white;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 600;
+            transition: all 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .qr-nav .btn:hover {
+            background: #5568d3;
+            transform: translateY(-1px);
+        }
+
+        .qr-nav .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .qr-nav .btn.secondary {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .qr-nav .btn.secondary:hover {
+            background: #c0392b;
+        }
+
+        .qr-nav .badge {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            background: #667eea;
+            color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .qr-nav .statusRow {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .qr-nav .statusRow .badge {
+            background: #f8f9fa;
+            color: #333;
+            border: 2px solid #e0e0e0;
+        }
+
+        .qr-nav .info {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border: 2px solid #f0f0f0;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .qr-nav .titleSmall {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #667eea;
+            margin-bottom: 12px;
+            letter-spacing: 0.5px;
+        }
+
+        .qr-nav .big {
+            font-size: 22px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 8px;
+            line-height: 1.3;
+        }
+
+        .qr-nav .instructionCard {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: flex;
+            gap: 20px;
+            align-items: start;
+            color: white;
+            margin-bottom: 20px;
+        }
+
+        .qr-nav .instrIcon {
+            font-size: 32px;
+            color: white;
+        }
+
+        .qr-nav .instrText {
+            font-size: 18px;
+            font-weight: 600;
+            color: white;
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        .qr-nav .muted {
+            color: rgba(255,255,255,0.8);
+            font-size: 13px;
+        }
+
+        .qr-nav .logBox {
+            height: 200px;
+            overflow-y: auto;
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 12px;
+        }
+
+        .qr-nav .consoleArea {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: #333;
+            white-space: pre-wrap;
+            line-height: 1.6;
+        }
+
+        .qr-nav .hospitalMap {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            color: #333;
+        }
+
+        .qr-nav .mapSvg {
+            width: 100%;
+            height: auto;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            background: #f8f9fa;
+        }
+
+        .qr-nav .qrCodeSection {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            grid-column: 1 / -1;
+            margin-top: 20px;
+            color: #333;
+        }
+
+        .qr-nav .qrGrid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .qr-nav .qrItem {
+            background: #f8f9fa;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .qr-nav .qrItem.destination {
+            border: 2px solid #2196f3;
+            background: #e3f2fd;
+        }
+
+        .qr-nav .qrItem h3 {
+            font-size: 16px;
+            color: #667eea;
+            margin-bottom: 8px;
+        }
+
+        .qr-nav .qrItem.destination h3 {
+            color: #2196f3;
+        }
+
+        .qr-nav .qrItem code {
+            display: block;
+            background: white;
+            padding: 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #333;
+            word-break: break-all;
+            margin-top: 8px;
+            border: 1px solid #ddd;
+        }
+
+        .qr-nav .sectionTitle {
+            font-size: 20px;
+            color: #667eea;
+            font-weight: 700;
+            margin: 30px 0 15px 0;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .qr-nav footer {
+            text-align: center;
+            color: white;
+            margin-top: 30px;
+            font-size: 14px;
+            font-weight: 500;
+            grid-column: 1 / -1;
+        }
+
+        @media (max-width: 1200px) {
+            .qr-nav .container {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .qr-nav .container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* MODULE 4: Queue Status Styles */
+        .queue-panel {
+            background: var(--panel);
+            border-radius: 18px;
+            padding: 2rem;
+            max-width: 900px;
+            margin: 0 auto;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.35);
+        }
+
+        .queue-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0 1.5rem 0;
+        }
+
+        .queue-card {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 14px;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .queue-token {
+            font-size: 3rem;
+            font-weight: 800;
+            color: var(--primary);
+            letter-spacing: 0.1em;
+        }
+
+        .queue-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.5rem 0.75rem;
+            border-radius: 999px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            background: rgba(15, 142, 199, 0.15);
+            border: 1px solid rgba(15, 142, 199, 0.3);
+            color: #8ae3ff;
+        }
+
+        .queue-emergency {
+            background: rgba(239, 68, 68, 0.15);
+            border-color: rgba(239, 68, 68, 0.35);
+            color: #ff9b9b;
+        }
+
+        .queue-actions {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+        }
+
+        .queue-btn {
+            padding: 0.75rem 1.2rem;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.08);
+            background: rgba(255,255,255,0.08);
+            color: white;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.15s ease, background 0.2s ease;
+        }
+
+        .queue-btn:hover {
+            transform: translateY(-1px);
+            background: rgba(255,255,255,0.12);
+        }
+
+        .queue-status-text {
+            text-align: center;
+            margin-top: 0.5rem;
+            color: var(--text);
+            opacity: 0.8;
+        }
+
+        @media (max-width: 1100px) {
+            .health-main {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .app-header h1 {
+                font-size: 1.5rem;
+            }
+            
+            .module-container {
+                padding: 1rem;
+            }
+
+            .form-container {
+                padding: 25px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-header">
+        <h1>🌟 Accessibility Assistant</h1>
+        <p>Empowering Independence Through Technology</p>
+        <div class="voice-status" id="mainVoiceStatus">
+            Say "Voice Form Filling", "Signboard Reader", "Navigation Mode", or "Queue Status"
+        </div>
+    </div>
+
+    <!-- MODULE 1: Voice Form -->
+    <div id="module-form" class="module-container">
+        <div class="form-container">
+            <h1>🎤 Voice Form Assistant</h1>
+            <p class="subtitle">For Visually Impaired Users</p>
+
+            <div class="status-container">
+                <div class="listening-indicator" id="listeningIndicator">
+                    <span class="mic-icon">🎤</span>
+                </div>
+                <div class="status-text" id="statusText">
+                    Say "Start Form Filling" to begin
+                </div>
+            </div>
+
+            <div class="form-section">
+                <div class="form-field" id="field-name">
+                    <label for="name">Name</label>
+                    <input type="text" id="name" readonly>
+                </div>
+
+                <div class="form-field" id="field-age">
+                    <label for="age">Age</label>
+                    <input type="text" id="age" readonly>
+                </div>
+
+                <div class="form-field" id="field-phone">
+                    <label for="phone">Phone Number</label>
+                    <input type="text" id="phone" readonly>
+                </div>
+
+                <div class="form-field" id="field-address">
+                    <label for="address">Address</label>
+                    <input type="text" id="address" readonly>
+                </div>
+            </div>
+
+            <div class="voice-commands">
+                <h3>Voice Commands</h3>
+                <ul>
+                    <li><strong>"Start Form Filling"</strong> - Begin the form</li>
+                    <li><strong>"Scan Form"</strong> - Use camera to read form</li>
+                    <li><strong>"Repeat"</strong> - Hear the question again</li>
+                    <li><strong>"Skip"</strong> - Skip current field</li>
+                    <li><strong>"Back"</strong> - Go to previous field</li>
+                    <li><strong>"Reset Form"</strong> - Clear all fields</li>
+                </ul>
+            </div>
+
+            <div class="error-message" id="errorMessage"></div>
+        </div>
+        <video id="cameraStream" style="display:none;" autoplay></video>
+    </div>
+
+    <!-- MODULE 2: Health Reader -->
+    <div id="module-health" class="module-container">
+        <div style="background: var(--panel); border-radius: 18px;">
+            <div class="health-header">
+                <h1>Health Reader</h1>
+                <div class="button-bar">
+                    <button id="settingsButton">Settings</button>
+                    <button id="toggleScanButton" class="secondary">Start Scanning</button>
+                </div>
+            </div>
+
+            <div class="health-main">
+                <section class="health-section" id="videoPanel">
+                    <div id="statusBadge">Idle</div>
+                    <video id="camera" autoplay muted playsinline></video>
+                    <div id="recognizedText" aria-live="polite">Signs will appear here once detected.</div>
+                    <div class="button-bar">
+                        <button id="speakLastButton" class="secondary">Repeat Last Announcement</button>
+                        <button id="simulateButton">Simulate Detection</button>
+                    </div>
+                </section>
+
+                <section class="health-section">
+                    <h2>Activity &amp; Lab Testing Tools</h2>
+                    <p id="statusMessage">Provide your Google Vision or Azure Vision credentials to begin.</p>
+                    <ul id="logList" aria-live="polite"></ul>
+                    <div style="margin-top:1rem">
+                        <strong>Lab Toolkit:</strong>
+                        <p>
+                            Display a card below full-screen on another monitor/tablet and aim the Health Reader camera at it,
+                            or use the simulate button to pipe synthetic detections through the same announcement logic.
+                        </p>
+                        <div id="testCards">
+                            <div class="sign-card">Radiology Department</div>
+                            <div class="sign-card">Clinical Labs</div>
+                            <div class="sign-card">Emergency Triage</div>
+                            <div class="sign-card">Pharmacy Pickup</div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <div id="settingsModal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+        <form class="modal-content" id="settingsForm">
+            <h2 id="settingsTitle">Computer Vision Settings</h2>
+            <p>Select your preferred OCR provider. Credentials are stored locally and only sent to the provider you choose.</p>
+            <label>
+                Provider
+                <select id="providerSelect" name="provider">
+                    <option value="google">Google Cloud Vision</option>
+                    <option value="azure">Azure Computer Vision</option>
+                </select>
+            </label>
+            <div id="googleFields">
+                <label>
+                    Google Vision API Key
+                    <input id="googleKeyInput" name="googleApiKey" placeholder="AIza..." />
+                </label>
+                <p class="hint">
+                    Create an API key from the <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noreferrer">Google Cloud Console</a>
+                    with the Vision API enabled.
+                </p>
+            </div>
+            <div id="azureFields">
+                <label>
+                    Azure Vision Endpoint
+                    <input id="azureEndpointInput" name="azureEndpoint" placeholder="https://<region>.api.cognitive.microsoft.com" />
+                </label>
+                <label>
+                    Azure Vision Key
+                    <input id="azureKeyInput" name="azureKey" placeholder="Your Cognitive Services key" />
+                </label>
+                <p class="hint">
+                    Use the endpoint URL and one of the Keys from your Azure Computer Vision resource (Cognitive Services multi-service works too).
+                </p>
+            </div>
+            <div class="button-bar" style="justify-content:flex-end">
+                <button type="button" class="secondary" id="cancelSettings">Cancel</button>
+                <button type="submit">Save Settings</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- MODULE 3: Navigation -->
+    <div id="module-navigation" class="module-container">
+        <div class="qr-nav">
+            <div class="container">
+                <div class="card">
+                    <h1>🎯 QR Scanner</h1>
+                    <div id="reader"></div>
+
+                    <div class="controls">
+                        <button class="btn" id="setDestBtn">🎤 Set Destination</button>
+                        <button class="btn secondary" id="resetBtn">🔄 Reset</button>
+                        <span class="badge" id="navStatusBadge">Initializing...</span>
+                    </div>
+
+                    <div class="statusRow">
+                        <div class="badge" id="currentBadge">Current: —</div>
+                        <div class="badge" id="nextBadge">Next: —</div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="info">
+                        <div class="titleSmall">📍 Destination</div>
+                        <p class="big" id="destDisplay">Not set</p>
+                    </div>
+
+                    <div class="info">
+                        <div class="titleSmall">🗺️ Navigation Status</div>
+                        <p class="big" id="pathStatus">Waiting...</p>
+                    </div>
+
+                    <div class="instructionCard">
+                        <div class="instrIcon">🔊</div>
+                        <div>
+                            <p class="instrText" id="spokenInstruction">No instruction yet</p>
+                            <p class="muted">Instructions spoken once per scan</p>
+                        </div>
+                    </div>
+
+                    <div class="info">
+                        <div class="titleSmall">📋 Activity Log</div>
+                        <div class="logBox">
+                            <div id="console" class="consoleArea"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hospitalMap">
+                    <h1>🏥 Hospital Map</h1>
+                    <svg class="mapSvg" viewBox="0 0 400 500" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="170" y="50" width="60" height="400" fill="#e8eaf6" stroke="#667eea" stroke-width="2"/>
+                        <rect x="150" y="440" width="100" height="40" fill="#4caf50" stroke="#2e7d32" stroke-width="2" rx="5"/>
+                        <text x="200" y="465" text-anchor="middle" font-size="14" font-weight="bold" fill="white">ENTRANCE</text>
+                        <circle cx="200" cy="420" r="15" fill="#667eea"/>
+                        <text x="200" y="425" text-anchor="middle" font-size="10" font-weight="bold" fill="white">START</text>
+                        <text x="250" y="425" font-size="11" fill="#333">QR_START</text>
+                        <circle cx="200" cy="360" r="15" fill="#667eea"/>
+                        <text x="200" y="365" text-anchor="middle" font-size="10" font-weight="bold" fill="white">M1</text>
+                        <text x="250" y="365" font-size="11" fill="#333">QR_MAIN_1</text>
+                        <circle cx="200" cy="280" r="18" fill="#ff9800"/>
+                        <text x="200" y="285" text-anchor="middle" font-size="10" font-weight="bold" fill="white">JA</text>
+                        <text x="250" y="285" font-size="11" fill="#333">QR_JUNCTION_A</text>
+                        <circle cx="200" cy="180" r="18" fill="#ff9800"/>
+                        <text x="200" y="185" text-anchor="middle" font-size="10" font-weight="bold" fill="white">JB</text>
+                        <text x="250" y="185" font-size="11" fill="#333">QR_JUNCTION_B</text>
+                        <circle cx="200" cy="100" r="15" fill="#667eea"/>
+                        <text x="200" y="105" text-anchor="middle" font-size="10" font-weight="bold" fill="white">M2</text>
+                        <text x="250" y="105" font-size="11" fill="#333">QR_MAIN_2</text>
+                        <line x1="200" y1="280" x2="80" y2="280" stroke="#667eea" stroke-width="3" stroke-dasharray="5,5"/>
+                        <rect x="20" y="260" width="60" height="40" fill="#2196f3" stroke="#1565c0" stroke-width="2" rx="5"/>
+                        <text x="50" y="285" text-anchor="middle" font-size="12" font-weight="bold" fill="white">Room 1</text>
+                        <circle cx="120" cy="280" r="12" fill="#667eea"/>
+                        <text x="120" y="284" text-anchor="middle" font-size="9" font-weight="bold" fill="white">R1</text>
+                        <text x="120" y="300" text-anchor="middle" font-size="10" fill="#333">QR_ROOM_1</text>
+                        <line x1="200" y1="280" x2="320" y2="280" stroke="#667eea" stroke-width="3" stroke-dasharray="5,5"/>
+                        <rect x="320" y="260" width="60" height="40" fill="#2196f3" stroke="#1565c0" stroke-width="2" rx="5"/>
+                        <text x="350" y="285" text-anchor="middle" font-size="12" font-weight="bold" fill="white">Room 2</text>
+                        <circle cx="280" cy="280" r="12" fill="#667eea"/>
+                        <text x="280" y="284" text-anchor="middle" font-size="9" font-weight="bold" fill="white">R2</text>
+                        <text x="280" y="300" text-anchor="middle" font-size="10" fill="#333">QR_ROOM_2</text>
+                        <line x1="200" y1="180" x2="80" y2="180" stroke="#667eea" stroke-width="3" stroke-dasharray="5,5"/>
+                        <rect x="20" y="160" width="60" height="40" fill="#2196f3" stroke="#1565c0" stroke-width="2" rx="5"/>
+                        <text x="50" y="185" text-anchor="middle" font-size="12" font-weight="bold" fill="white">Room 3</text>
+                        <circle cx="120" cy="180" r="12" fill="#667eea"/>
+                        <text x="120" y="184" text-anchor="middle" font-size="9" font-weight="bold" fill="white">R3</text>
+                        <text x="120" y="200" text-anchor="middle" font-size="10" fill="#333">QR_ROOM_3</text>
+                        <line x1="200" y1="180" x2="320" y2="180" stroke="#667eea" stroke-width="3" stroke-dasharray="5,5"/>
+                        <rect x="320" y="160" width="60" height="40" fill="#2196f3" stroke="#1565c0" stroke-width="2" rx="5"/>
+                        <text x="350" y="185" text-anchor="middle" font-size="12" font-weight="bold" fill="white">Room 4</text>
+                        <circle cx="280" cy="180" r="12" fill="#667eea"/>
+                        <text x="280" y="184" text-anchor="middle" font-size="9" font-weight="bold" fill="white">R4</text>
+                        <text x="280" y="200" text-anchor="middle" font-size="10" fill="#333">QR_ROOM_4</text>
+                        <rect x="170" y="50" width="60" height="40" fill="#2196f3" stroke="#1565c0" stroke-width="2" rx="5"/>
+                        <text x="200" y="75" text-anchor="middle" font-size="12" font-weight="bold" fill="white">Room 5</text>
+                        <circle cx="200" cy="40" r="12" fill="#667eea"/>
+                        <text x="200" y="44" text-anchor="middle" font-size="9" font-weight="bold" fill="white">R5</text>
+                        <text x="200" y="30" text-anchor="middle" font-size="10" fill="#333">QR_ROOM_5</text>
+                        <text x="10" y="20" font-size="10" font-weight="bold" fill="#333">🔵 QR Code 🟠 Junction</text>
+                    </svg>
+                </div>
+
+                <div class="qrCodeSection">
+                    <h1>📱 ALL 10 QR Codes to Generate</h1>
+                    <p style="color: #666; margin-bottom: 10px;">Generate ALL these QR codes and place them at the marked locations:</p>
+                    
+                    <div class="sectionTitle">🛤️ Navigation Path QR Codes (5 codes)</div>
+                    <div class="qrGrid">
+                        <div class="qrItem">
+                            <h3>1️⃣ QR_START</h3>
+                            <p style="font-size: 13px; color: #666; margin: 8px 0;">At Entrance</p>
+                            <code>{"id": "QR_START"}</code>
+                        </div>
+                        
+                        <div class="qrItem">
+                            <h3>2️⃣ QR_MAIN_1</h3>
+                            <p style="font-size: 13px; color: #666; margin: 8px 0;">10m from entrance</p>
+                            <code>{"id": "QR_MAIN_1"}</code>
+                        </div>
+                        
+                        <div class="qrItem">
+                            <h3>3️⃣ QR_JUNCTION_A</h3>
+                            <p style="font-size: 13px; color: #666; margin: 8px 0;">First Junction (8m ahead)</p>
+                            <code>{"id": "QR_JUNCTION_A"}</code>
+                        </div>
+                        
+                        <div class="qrItem">
+                            <h3>4️⃣ QR_JUNCTION_B</h3>
+                            <p style="font-size: 13px; color: #666; margin: 8px 0;">Second Junction (10m ahead)</p>
+                            <code>{"id": "QR_JUNCTION_B"}</code>
+                        </div>
+                        
+                        <div class="qrItem">
+                            <h3>5️⃣ QR_MAIN_2</h3>
+                            <p style="font-size: 13px; color: #666; margin: 8px 0;">8m from Junction B</p>
+                            <code>{"id": "QR_MAIN_2"}</code>
+                        </div>
+                    </div>
+
+                    <div class="sectionTitle">🏥 Room Destination QR Codes (5 codes)</div>
+                    <div class="qrGrid">
+                        <div class="qrItem destination">
+                            <h3>6️⃣ QR_ROOM_1</h3>
+                            <p style="font-size: 13px; color: #1976d2; margin: 8px 0;">Cardiology (Left from JA, 5m)</p>
+                            <code>{"id": "QR_ROOM_1"}</code>
+                        </div>
+                        
+                        <div class="qrItem destination">
+                            <h3>7️⃣ QR_ROOM_2</h3>
+                            <p style="font-size: 13px; color: #1976d2; margin: 8px 0;">Orthopedics (Right from JA, 5m)</p>
+                            <code>{"id": "QR_ROOM_2"}</code>
+                        </div>
+                        
+                        <div class="qrItem destination">
+                            <h3>8️⃣ QR_ROOM_3</h3>
+                            <p style="font-size: 13px; color: #1976d2; margin: 8px 0;">Pediatrics (Left from JB, 5m)</p>
+                            <code>{"id": "QR_ROOM_3"}</code>
+                        </div>
+                        
+                        <div class="qrItem destination">
+                            <h3>9️⃣ QR_ROOM_4</h3>
+                            <p style="font-size: 13px; color: #1976d2; margin: 8px 0;">Neurology (Right from JB, 5m)</p>
+                            <code>{"id": "QR_ROOM_4"}</code>
+                        </div>
+                        
+                        <div class="qrItem destination">
+                            <h3>🔟 QR_ROOM_5</h3>
+                            <p style="font-size: 13px; color: #1976d2; margin: 8px 0;">Emergency (5m from M2)</p>
+                            <code>{"id": "QR_ROOM_5"}</code>
+                        </div>
+                    </div>
+                    
+                    <p style="color: #2196f3; margin-top: 20px; font-weight: 600;">✅ Total: 10 QR codes needed for complete navigation system</p>
+                </div>
+
+                <footer>🎧 Designed for visually impaired users • Use headphones • HTTPS required</footer>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODULE 4: Queue Status -->
+    <div id="module-queue" class="module-container">
+        <div class="queue-panel">
+            <h2 style="text-align:center; font-size: 1.6rem; margin-bottom: 0.5rem;">🎧 Queue Status Announcer</h2>
+            <p class="queue-status-text" id="queue-status-text">Live queue updates with voice prompts</p>
+
+            <div class="queue-grid">
+                <div class="queue-card">
+                    <p class="text-text-secondary" style="margin-bottom: 0.35rem;">Your Token</p>
+                    <div class="queue-token" id="queue-token-number">--</div>
+                    <div class="queue-badge queue-emergency" id="queue-emergency-badge" style="display:none;">Emergency</div>
+                </div>
+                <div class="queue-card">
+                    <p class="text-text-secondary" style="margin-bottom: 0.35rem;">Estimated Wait</p>
+                    <div id="queue-wait-time" style="font-size:1.4rem; font-weight:700;">--</div>
+                </div>
+                <div class="queue-card">
+                    <p class="text-text-secondary" style="margin-bottom: 0.35rem;">Currently Serving</p>
+                    <div id="queue-current-serving" style="font-size:1.4rem; font-weight:700;">--</div>
+                </div>
+            </div>
+
+            <div class="queue-actions">
+                <button class="queue-btn" id="queue-speak-status">🔊 Speak Status</button>
+                <button class="queue-btn" id="queue-refresh-token">🔄 Refresh Token</button>
+            </div>
+            <p class="queue-status-text">Say "Queue Status", "My Token", or simply "Status" while in this module to hear updates.</p>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initQueueUserModule } from "./queueUserModule.js";
+        import { initFirebase } from "./queueStoreFirestore.js";
+
+        const firebaseConfig = {
+            // TODO: Paste your Firebase config here (must match queueStoreFirestore.js)
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            projectId: "YOUR_PROJECT_ID",
+        };
+        initFirebase(firebaseConfig);
+
+        // =================================================================
+        // MAIN VOICE NAVIGATION BETWEEN MODULES
+        // =================================================================
+        let currentModule = null;
+        const mainVoiceStatus = document.getElementById('mainVoiceStatus');
+        let mainRecognition = null;
+        let isMainListening = false;
+        const moduleNames = {
+            form: "Voice Form Filling",
+            health: "Signboard Reader",
+            navigation: "Navigation",
+            queue: "Queue Status"
+        };
+        const moduleKeywords = {
+            form: ["voice form", "form filling", "form module", "voice form filling"],
+            health: ["signboard", "sign board", "sign reading", "health reader", "sign reader"],
+            navigation: ["navigation", "navigation mode", "navigate", "nav mode"],
+            queue: ["queue", "token", "queue status", "medqueue", "waiting status", "my token"]
+        };
+        let moduleSwitchRecognition = null;
+        let moduleSwitchActiveFor = null;
+        let queueControls = null;
+
+        function detectModuleTarget(transcript) {
+            const lower = transcript.toLowerCase();
+            if (moduleKeywords.form.some(k => lower.includes(k))) return "form";
+            if (moduleKeywords.health.some(k => lower.includes(k))) return "health";
+            if (moduleKeywords.navigation.some(k => lower.includes(k))) return "navigation";
+            return null;
+        }
+
+        function stopModuleSwitchListener() {
+            moduleSwitchActiveFor = null;
+            if (moduleSwitchRecognition) {
+                try { moduleSwitchRecognition.stop(); } catch (e) {}
+                moduleSwitchRecognition.onresult = null;
+                moduleSwitchRecognition.onerror = null;
+                moduleSwitchRecognition.onend = null;
+            }
+            moduleSwitchRecognition = null;
+        }
+
+        function startModuleSwitchListener(activeModule) {
+            // Avoid running alongside Module 1's own recognizers
+            if (activeModule === "form") return;
+            stopModuleSwitchListener();
+
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                mainVoiceStatus.textContent = "Speech recognition not supported for module switching.";
+                return;
+            }
+
+            moduleSwitchActiveFor = activeModule;
+            moduleSwitchRecognition = new SpeechRecognition();
+            moduleSwitchRecognition.continuous = true;
+            moduleSwitchRecognition.interimResults = false;
+            moduleSwitchRecognition.lang = "en-US";
+
+            moduleSwitchRecognition.onresult = (event) => {
+                const transcript = Array.from(event.results)
+                    .slice(event.resultIndex)
+                    .map(r => r[0].transcript)
+                    .join(" ")
+                    .trim();
+
+                if (activeModule === "queue" && queueControls) {
+                    const lower = transcript.toLowerCase();
+                    if (["status", "token", "position", "wait"].some(k => lower.includes(k))) {
+                        queueControls.handleVoiceCommand(lower);
+                        return;
+                    }
+                }
+
+                const target = detectModuleTarget(transcript);
+                if (target && target !== activeModule) {
+                    stopModuleSwitchListener();
+                    speakMain(`Opening ${moduleNames[target]} module.`, () => switchToModule(target));
+                } else if (target && target === activeModule) {
+                    mainVoiceStatus.textContent = `${moduleNames[target]} is already open.`;
+                }
+            };
+
+            moduleSwitchRecognition.onerror = () => {
+                mainVoiceStatus.textContent = 'Say "Voice Form Filling", "Signboard Reader", "Navigation Mode", or "Queue Status" to switch.';
+            };
+
+            moduleSwitchRecognition.onend = () => {
+                if (moduleSwitchActiveFor === activeModule) {
+                    try { moduleSwitchRecognition.start(); } catch (e) {}
+                }
+            };
+
+            try {
+                moduleSwitchRecognition.start();
+                mainVoiceStatus.textContent = `You are in ${moduleNames[activeModule]}. Say another module name to switch.`;
+            } catch (e) {
+                console.error("Failed to start module switch listener", e);
+            }
+        }
+
+        function switchToModule(moduleName) {
+            stopModuleSwitchListener();
+            document.querySelectorAll('.module-container').forEach(m => m.classList.remove('active'));
+            document.getElementById(`module-${moduleName}`).classList.add('active');
+            currentModule = moduleName;
+            
+            // Stop main voice recognition when entering a module
+            if (mainRecognition) {
+                try { mainRecognition.abort(); } catch(e) {}
+                mainRecognition = null;
+                isMainListening = false;
+            }
+            
+            // Initialize module-specific functionality
+            if (moduleName === 'form') {
+                initModule1();
+            } else if (moduleName === 'health') {
+                initModule2();
+                startModuleSwitchListener("health");
+            } else if (moduleName === 'navigation') {
+                initModule3();
+            } else if (moduleName === 'queue') {
+                initQueueModule();
+                startModuleSwitchListener("queue");
+            }
+        }
+
+        function startMainVoiceNavigation() {
+            if (currentModule !== null || isMainListening) return;
+            
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                mainVoiceStatus.textContent = "Speech recognition not supported";
+                return;
+            }
+
+            mainRecognition = new SpeechRecognition();
+            mainRecognition.continuous = false;
+            mainRecognition.interimResults = false;
+            mainRecognition.lang = "en-US";
+
+            mainRecognition.onstart = () => {
+                isMainListening = true;
+                mainVoiceStatus.textContent = "🎤 Listening... Say your module name";
+            };
+
+            mainRecognition.onresult = (event) => {
+                const command = event.results[0][0].transcript.toLowerCase().trim();
+                isMainListening = false;
+
+                const target = detectModuleTarget(command);
+                if (target) {
+                    mainVoiceStatus.textContent = `Opening ${moduleNames[target]}...`;
+                    speakMain(`Opening ${moduleNames[target]} module`, () => switchToModule(target));
+                } else {
+                    mainVoiceStatus.textContent = 'Say "Voice Form Filling", "Signboard Reader", "Navigation Mode", or "Queue Status"';
+                    setTimeout(startMainVoiceNavigation, 1000);
+                }
+            };
+
+            mainRecognition.onerror = () => {
+                isMainListening = false;
+                mainVoiceStatus.textContent = 'Say "Voice Form Filling", "Signboard Reader", "Navigation Mode", or "Queue Status"';
+                setTimeout(startMainVoiceNavigation, 1000);
+            };
+
+            mainRecognition.onend = () => {
+                isMainListening = false;
+                if (currentModule === null) {
+                    setTimeout(startMainVoiceNavigation, 1000);
+                }
+            };
+
+            try {
+                mainRecognition.start();
+            } catch (e) {
+                console.error("Failed to start main recognition:", e);
+                setTimeout(startMainVoiceNavigation, 1000);
+            }
+        }
+
+        function speakMain(text, callback) {
+            speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 0.9;
+            utterance.onend = () => {
+                if (callback) callback();
+            };
+            speechSynthesis.speak(utterance);
+        }
+
+        // Start main voice navigation on load
+        window.addEventListener('load', async () => {
+            try {
+                await navigator.mediaDevices.getUserMedia({ audio: true });
+                speakMain("Welcome to Accessibility Assistant. Say Voice Form Filling, Signboard Reader, Navigation Mode, or Queue Status to begin.", () => {
+                    setTimeout(startMainVoiceNavigation, 1000);
+                });
+            } catch (err) {
+                mainVoiceStatus.textContent = "Please allow microphone access";
+                speakMain("Please allow microphone access to use voice navigation.");
+            }
+        });
+
+        // =================================================================
+        // MODULE 1: VOICE FORM (COMPLETE ORIGINAL CODE)
+        // =================================================================
+        let module1Initialized = false;
+
+        function initModule1() {
+            if (module1Initialized) {
+                startCommandListening();
+                return;
+            }
+            module1Initialized = true;
+
+            const statusText = document.getElementById("statusText");
+            const listeningIndicator = document.getElementById("listeningIndicator");
+            const errorMessage = document.getElementById("errorMessage");
+            const video = document.getElementById("cameraStream");
+
+            const formFields = ["name", "age", "phone", "address"];
+            const fieldLabels = {
+                name: "name",
+                age: "age", 
+                phone: "phone number",
+                address: "address"
+            };
+            
+            let currentFieldIndex = 0;
+            let fillingActive = false;
+            let isListening = false;
+            let currentRecognition = null;
+
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            
+            if (!SpeechRecognition) {
+                showError("Speech recognition is not supported in this browser. Please use Chrome or Edge.");
+                speak("Speech recognition is not supported in this browser.");
+                return;
+            }
+
+            function exitToModule(targetModule) {
+                fillingActive = false;
+                isListening = false;
+                if (currentRecognition) {
+                    try { currentRecognition.abort(); } catch (e) {}
+                    currentRecognition = null;
+                }
+                speechSynthesis.cancel();
+                speak(`Switching to ${moduleNames[targetModule]} module.`, () => switchToModule(targetModule));
+            }
+
+            function createRecognition() {
+                const rec = new SpeechRecognition();
+                rec.continuous = false;
+                rec.interimResults = false;
+                rec.lang = "en-US";
+                rec.maxAlternatives = 1;
+                return rec;
+            }
+
+            speak("Voice Form Assistant ready. Say Start Form Filling to begin.", () => {
+                setTimeout(startCommandListening, 500);
+            });
+
+            function startCommandListening() {
+                if (isListening || fillingActive) {
+                    return;
+                }
+
+                currentRecognition = createRecognition();
+                
+                currentRecognition.onstart = () => {
+                    isListening = true;
+                    listeningIndicator.classList.add('active');
+                };
+
+                currentRecognition.onresult = (event) => {
+                    const command = event.results[0][0].transcript.toLowerCase().trim();
+                    
+                    isListening = false;
+                    listeningIndicator.classList.remove('active');
+
+                    const targetModule = detectModuleTarget(command);
+                    if (targetModule && targetModule !== "form") {
+                        exitToModule(targetModule);
+                        return;
+                    }
+
+                    if (command.includes("start") && (command.includes("form") || command.includes("filling"))) {
+                        startFormFilling();
+                    } else if (command.includes("scan") && command.includes("form")) {
+                        activateCamera();
+                    } else if (command.includes("reset") && command.includes("form")) {
+                        resetForm();
+                    } else {
+                        setTimeout(startCommandListening, 500);
+                    }
+                };
+
+                currentRecognition.onerror = (event) => {
+                    isListening = false;
+                    listeningIndicator.classList.remove('active');
+                    
+                    if (event.error === 'not-allowed') {
+                        showError("Microphone access denied.");
+                        speak("Microphone access denied. Please check your browser settings.");
+                    } else {
+                        setTimeout(startCommandListening, 1000);
+                    }
+                };
+
+                currentRecognition.onend = () => {
+                    isListening = false;
+                    listeningIndicator.classList.remove('active');
+                    
+                    if (!fillingActive) {
+                        setTimeout(startCommandListening, 1000);
+                    }
+                };
+
+                try {
+                    currentRecognition.start();
+                } catch (e) {
+                    isListening = false;
+                    setTimeout(startCommandListening, 1000);
+                }
+            }
+
+            function startFormFilling() {
+                fillingActive = true;
+                currentFieldIndex = 0;
+                
+                if (currentRecognition) {
+                    try {
+                        currentRecognition.abort();
+                    } catch (e) {}
+                    currentRecognition = null;
+                }
+                
+                speak("Starting form filling process.", () => {
+                    setTimeout(askQuestion, 800);
+                });
+            }
+
+            function askQuestion() {
+                if (!fillingActive) return;
+
+                if (currentFieldIndex >= formFields.length) {
+                    fillingActive = false;
+                    clearActiveFields();
+                    speak("Form completed successfully. All fields have been filled. Say Start Form Filling to fill another form, or Reset Form to clear the fields.", () => {
+                        setTimeout(startCommandListening, 1000);
+                    });
+                    return;
+                }
+
+                const fieldId = formFields[currentFieldIndex];
+                const fieldLabel = fieldLabels[fieldId];
+                
+                clearActiveFields();
+                document.getElementById(`field-${fieldId}`).classList.add('active');
+                
+                updateStatus(`Please say your ${fieldLabel}`);
+                
+                speak(`Please say your ${fieldLabel}.`, () => {
+                    setTimeout(() => {
+                        if (fillingActive) {
+                            listenForFieldInput();
+                        }
+                    }, 1000);
+                });
+            }
+
+            function listenForFieldInput() {
+                if (isListening) {
+                    return;
+                }
+
+                currentRecognition = createRecognition();
+                
+                let hasResult = false;
+                
+                currentRecognition.onstart = () => {
+                    isListening = true;
+                    listeningIndicator.classList.add('active');
+                    updateStatus("🎤 Listening... Speak now!");
+                };
+
+                currentRecognition.onresult = (event) => {
+                    hasResult = true;
+                    const spokenText = event.results[0][0].transcript.trim();
+                    const lowerText = spokenText.toLowerCase();
+                    const fieldId = formFields[currentFieldIndex];
+                    const fieldLabel = fieldLabels[fieldId];
+
+                    isListening = false;
+                    listeningIndicator.classList.remove('active');
+
+                    const targetModule = detectModuleTarget(lowerText);
+                    if (targetModule && targetModule !== "form") {
+                        exitToModule(targetModule);
+                        return;
+                    }
+                    
+                    if (lowerText === 'repeat' || lowerText.includes('repeat question')) {
+                        speak("Let me repeat the question.", () => {
+                            hasResult = false;
+                            setTimeout(askQuestion, 500);
+                        });
+                        return;
+                    } else if (lowerText.includes('skip') || lowerText === 'skip') {
+                        speak("Skipping this field.", () => {
+                            currentFieldIndex++;
+                            setTimeout(askQuestion, 500);
+                        });
+                        return;
+                    } else if (lowerText.includes('go back') || lowerText === 'back') {
+                        if (currentFieldIndex > 0) {
+                            currentFieldIndex--;
+                            speak("Going back to previous field.", () => {
+                                setTimeout(askQuestion, 500);
+                            });
+                        } else {
+                            speak("This is the first field.", () => {
+                                setTimeout(askQuestion, 500);
+                            });
+                        }
+                        return;
+                    }
+                    
+                    const input = document.getElementById(fieldId);
+                    if (input) {
+                        input.value = spokenText;
+                    }
+
+                    updateStatus(`${fieldLabel} recorded as: ${spokenText}`);
+
+                    speak(`${fieldLabel} recorded as ${spokenText}.`, () => {
+                        currentFieldIndex++;
+                        setTimeout(askQuestion, 800);
+                    });
+                };
+
+                currentRecognition.onerror = (event) => {
+                    if (hasResult) {
+                        return;
+                    }
+                    
+                    isListening = false;
+                    listeningIndicator.classList.remove('active');
+                    
+                    if (fillingActive) {
+                        if (event.error === 'no-speech') {
+                            speak("Sorry, I didn't hear anything. Let me ask again.", () => {
+                                setTimeout(askQuestion, 500);
+                            });
+                        } else if (event.error === 'aborted') {
+                            setTimeout(() => {
+                                if (fillingActive) {
+                                    speak("Let me try listening again.", () => {
+                                        setTimeout(listenForFieldInput, 500);
+                                    });
+                                }
+                            }, 500);
+                        } else {
+                            speak("Sorry, there was an error. Let me try again.", () => {
+                                setTimeout(askQuestion, 500);
+                            });
+                        }
+                    }
+                };
+
+                currentRecognition.onend = () => {
+                    if (hasResult) {
+                        isListening = false;
+                        listeningIndicator.classList.remove('active');
+                        return;
+                    }
+                    
+                    isListening = false;
+                    listeningIndicator.classList.remove('active');
+                    
+                    if (fillingActive && !hasResult) {
+                        setTimeout(() => {
+                            if (fillingActive) {
+                                listenForFieldInput();
+                            }
+                        }, 1000);
+                    }
+                };
+
+                try {
+                    currentRecognition.start();
+                } catch (e) {
+                    isListening = false;
+                    speak("Error starting microphone. Let me try again.", () => {
+                        setTimeout(askQuestion, 500);
+                    });
+                }
+            }
+
+            async function activateCamera() {
+                speak("Camera activated. Please point your camera towards the form. Scanning will begin in 5 seconds.");
+                updateStatus("Camera activated - Position your form");
+                
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ 
+                        video: { facingMode: 'environment' } 
+                    });
+                    video.srcObject = stream;
+                    video.style.display = 'block';
+
+                    setTimeout(() => captureImageAndScanForm(stream), 5000);
+                } catch (error) {
+                    showError("Camera access denied. Please enable camera permissions.");
+                    speak("Camera access denied. Please enable camera permissions.");
+                    setTimeout(startCommandListening, 2000);
+                }
+            }
+
+            async function captureImageAndScanForm(stream) {
+                const canvas = document.createElement("canvas");
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                canvas.getContext("2d").drawImage(video, 0, 0);
+
+                const dataURL = canvas.toDataURL("image/png");
+                
+                stream.getTracks().forEach(track => track.stop());
+                video.style.display = 'none';
+                
+                updateStatus("Scanning form for text...");
+                speak("Scanning the form for text labels. Please wait.");
+
+                try {
+                    const result = await Tesseract.recognize(dataURL, "eng");
+                    updateStatus("Scan complete");
+                    speak("Scan complete. You can now say Start Form Filling to begin voice input.", () => {
+                        setTimeout(startCommandListening, 1000);
+                    });
+                } catch (error) {
+                    showError("Scan failed. Please try again.");
+                    speak("Scan failed. Please try again.");
+                    setTimeout(startCommandListening, 2000);
+                }
+            }
+
+            function resetForm() {
+                if (currentRecognition) {
+                    try {
+                        currentRecognition.abort();
+                    } catch (e) {}
+                    currentRecognition = null;
+                }
+                
+                formFields.forEach(fieldId => {
+                    document.getElementById(fieldId).value = '';
+                });
+                clearActiveFields();
+                fillingActive = false;
+                isListening = false;
+                currentFieldIndex = 0;
+                updateStatus("Form reset. Say Start Form Filling to begin again.");
+                speak("Form has been reset. Say Start Form Filling to begin again.", () => {
+                    setTimeout(startCommandListening, 1000);
+                });
+            }
+
+            function speak(message, onEndCallback) {
+                if (currentRecognition && isListening) {
+                    try {
+                        currentRecognition.stop();
+                    } catch (e) {}
+                }
+                isListening = false;
+                listeningIndicator.classList.remove('active');
+                
+                speechSynthesis.cancel();
+                
+                setTimeout(() => {
+                    const utter = new SpeechSynthesisUtterance(message);
+                    utter.rate = 0.9;
+                    utter.pitch = 1;
+                    utter.volume = 1;
+                    
+                    utter.onend = () => {
+                        if (onEndCallback) {
+                            onEndCallback();
+                        }
+                    };
+                    
+                    utter.onerror = (e) => {
+                        if (onEndCallback) {
+                            onEndCallback();
+                        }
+                    };
+                    
+                    speechSynthesis.speak(utter);
+                }, 200);
+            }
+
+            function updateStatus(message) {
+                statusText.textContent = message;
+            }
+
+            function showError(message) {
+                errorMessage.textContent = message;
+                errorMessage.style.display = 'block';
+                setTimeout(() => {
+                    errorMessage.style.display = 'none';
+                }, 5000);
+            }
+
+        function clearActiveFields() {
+            formFields.forEach(fieldId => {
+                document.getElementById(`field-${fieldId}`).classList.remove('active');
+            });
+        }
+        }
+
+        // =================================================================
+        // MODULE 4: QUEUE STATUS
+        // =================================================================
+        let moduleQueueInitialized = false;
+        const QUEUE_SESSION_KEY = "queuePatientId";
+
+        function initQueueModule() {
+            const tokenNumberEl = document.getElementById("queue-token-number");
+            const waitTimeEl = document.getElementById("queue-wait-time");
+            const currentServingEl = document.getElementById("queue-current-serving");
+            const emergencyBadgeEl = document.getElementById("queue-emergency-badge");
+            const statusTextEl = document.getElementById("queue-status-text");
+            const speakBtn = document.getElementById("queue-speak-status");
+            const refreshBtn = document.getElementById("queue-refresh-token");
+
+            if (!moduleQueueInitialized) {
+                queueControls = initQueueUserModule({
+                    firebaseConfig,
+                    tokenNumberEl,
+                    waitTimeEl,
+                    currentServingEl,
+                    emergencyBadgeEl,
+                    statusTextEl,
+                });
+                moduleQueueInitialized = true;
+
+                if (speakBtn) {
+                    speakBtn.addEventListener("click", () => queueControls.speakStatus());
+                }
+                if (refreshBtn) {
+                    refreshBtn.addEventListener("click", () => {
+                        queueControls.resetToken();
+                        queueControls.handleVoiceCommand("status");
+                    });
+                }
+            } else if (queueControls) {
+                queueControls.handleVoiceCommand("status");
+            }
+        }
+
+        // =================================================================
+        // MODULE 2: HEALTH READER (COMPLETE ORIGINAL CODE)
+        // =================================================================
+        let module2Initialized = false;
+
+        function initModule2() {
+            if (module2Initialized) return;
+            module2Initialized = true;
+
+            const settingsKey = "healthReaderSettings";
+            const detectionKeywords = [
+                "department", "departments", "clinic", "clinical", "lab", "laboratory", "labs",
+                "imaging", "radiology", "pharmacy", "emergency", "triage", "ward", "outpatient",
+                "intake", "registration", "surgery", "cardiology", "oncology", "endoscopy",
+                "diagnostic", "pediatrics", "neonatal"
+            ];
+
+            const state = {
+                settings: null,
+                scanning: false,
+                stream: null,
+                captureCanvas: document.createElement("canvas"),
+                synth: window.speechSynthesis,
+                lastAnnouncement: "",
+                lastAnnouncedAt: 0,
+                minAnnouncementGapMs: 10000,
+                scanDelayMs: 3500
+            };
+
+            const videoEl = document.getElementById("camera");
+            const statusBadge = document.getElementById("statusBadge");
+            const statusMessage = document.getElementById("statusMessage");
+            const recognizedText = document.getElementById("recognizedText");
+            const logList = document.getElementById("logList");
+            const providerSelect = document.getElementById("providerSelect");
+            const googleFields = document.getElementById("googleFields");
+            const azureFields = document.getElementById("azureFields");
+            const googleKeyInput = document.getElementById("googleKeyInput");
+            const azureEndpointInput = document.getElementById("azureEndpointInput");
+            const azureKeyInput = document.getElementById("azureKeyInput");
+
+            document.getElementById("settingsButton").addEventListener("click", openSettingsModal);
+            document.getElementById("toggleScanButton").addEventListener("click", toggleScanning);
+            document.getElementById("speakLastButton").addEventListener("click", () => {
+                if (state.lastAnnouncement) {
+                    speakText(state.lastAnnouncement, true);
+                }
+            });
+            document.getElementById("simulateButton").addEventListener("click", () => {
+                const samples = ["Radiology Department", "Clinical Labs", "Emergency Triage", "Pharmacy Pickup"];
+                const sample = samples[Math.floor(Math.random() * samples.length)];
+                handleAnnouncement(sample, true);
+            });
+            providerSelect.addEventListener("change", () => updateProviderFields(providerSelect.value));
+
+            document.getElementById("settingsForm").addEventListener("submit", (event) => {
+                event.preventDefault();
+                const provider = providerSelect.value;
+                const googleApiKey = googleKeyInput.value.trim();
+                const azureEndpoint = azureEndpointInput.value.trim();
+                const azureKey = azureKeyInput.value.trim();
+                if (provider === "google" && !googleApiKey) {
+                    alert("Google Vision API key is required.");
+                    return;
+                }
+                if (provider === "azure" && (!azureEndpoint || !azureKey)) {
+                    alert("Azure Vision endpoint and key are required.");
+                    return;
+                }
+                const payload = {provider, googleApiKey, azureEndpoint, azureKey};
+                localStorage.setItem(settingsKey, JSON.stringify(payload));
+                state.settings = payload;
+                closeSettingsModal();
+                appendLog(`${providerDisplayName(provider)} settings saved locally.`);
+                statusMessage.textContent = `Ready to scan with ${providerDisplayName(provider)}.`;
+            });
+
+            document.getElementById("cancelSettings").addEventListener("click", closeSettingsModal);
+            document.getElementById("settingsModal").addEventListener("click", (event) => {
+                if (event.target.id === "settingsModal") closeSettingsModal();
+            });
+
+            function openSettingsModal() {
+                populateSettingsForm(state.settings);
+                document.getElementById("settingsModal").classList.add("active");
+            }
+
+            function closeSettingsModal() {
+                document.getElementById("settingsModal").classList.remove("active");
+            }
+
+            function populateSettingsForm(settings) {
+                const provider = settings?.provider || "google";
+                providerSelect.value = provider;
+                googleKeyInput.value = settings?.googleApiKey || "";
+                azureEndpointInput.value = settings?.azureEndpoint || "";
+                azureKeyInput.value = settings?.azureKey || "";
+                updateProviderFields(provider);
+            }
+
+            function updateProviderFields(provider = providerSelect.value) {
+                googleFields.classList.toggle("hidden", provider !== "google");
+                azureFields.classList.toggle("hidden", provider !== "azure");
+            }
+
+            function providerDisplayName(provider) {
+                return provider === "azure" ? "Azure Computer Vision" : "Google Cloud Vision";
+            }
+
+            function loadSettings() {
+                const saved = localStorage.getItem(settingsKey);
+                if (saved) {
+                    try {
+                        const parsed = JSON.parse(saved);
+                        if (!parsed.provider && parsed.apiKey) {
+                            parsed.provider = "google";
+                            parsed.googleApiKey = parsed.apiKey;
+                            delete parsed.apiKey;
+                        }
+                        state.settings = parsed;
+                        populateSettingsForm(state.settings);
+                        statusMessage.textContent = `Settings loaded for ${providerDisplayName(state.settings.provider)}.`;
+                    } catch (error) {
+                        localStorage.removeItem(settingsKey);
+                        state.settings = null;
+                        populateSettingsForm(null);
+                    }
+                } else {
+                    populateSettingsForm(null);
+                }
+            }
+
+            function hasValidProviderSettings() {
+                if (!state.settings?.provider) return false;
+                if (state.settings.provider === "google") return Boolean(state.settings.googleApiKey);
+                if (state.settings.provider === "azure") return Boolean(state.settings.azureEndpoint && state.settings.azureKey);
+                return false;
+            }
+
+            async function initCamera() {
+                if (!navigator.mediaDevices?.getUserMedia) {
+                    statusMessage.textContent = "Camera API not available.";
+                    return;
+                }
+                try {
+                    state.stream = await navigator.mediaDevices.getUserMedia({
+                        video: { facingMode: "environment" }, audio: false
+                    });
+                    videoEl.srcObject = state.stream;
+                    await videoEl.play();
+                    appendLog("Camera stream active.");
+                } catch (error) {
+                    statusMessage.textContent = "Unable to access camera: " + error.message;
+                }
+            }
+
+            async function toggleScanning() {
+                if (!state.stream) await initCamera();
+                if (!hasValidProviderSettings()) {
+                    statusMessage.textContent = "Add your credentials first.";
+                    openSettingsModal();
+                    return;
+                }
+                state.scanning = !state.scanning;
+                document.getElementById("toggleScanButton").textContent = state.scanning ? "Stop Scanning" : "Start Scanning";
+                statusBadge.textContent = state.scanning ? "Scanning" : "Idle";
+                statusBadge.style.color = state.scanning ? "#36ffa5" : "#fff";
+                if (state.scanning) {
+                    appendLog(`Scanning started with ${providerDisplayName(state.settings.provider)}.`);
+                    scanLoop();
+                } else {
+                    appendLog("Scanning stopped.");
+                }
+            }
+
+            async function scanLoop() {
+                if (!state.scanning) return;
+                try {
+                    const content = await captureFrame();
+                    if (content) {
+                        statusMessage.textContent = `Sending frame to ${providerDisplayName(state.settings.provider)}...`;
+                        const fullText = await performOcr(content);
+                        const signage = extractSignage(fullText);
+                        if (signage) {
+                            handleAnnouncement(signage);
+                        } else {
+                            recognizedText.textContent = "No signage text detected.";
+                        }
+                    }
+                } catch (error) {
+                    statusMessage.textContent = error.message;
+                    appendLog("Error: " + error.message);
+                }
+                setTimeout(scanLoop, state.scanDelayMs);
+            }
+
+            function captureFrame() {
+                if (!videoEl.videoWidth || !videoEl.videoHeight) return null;
+                state.captureCanvas.width = videoEl.videoWidth;
+                state.captureCanvas.height = videoEl.videoHeight;
+                const ctx = state.captureCanvas.getContext("2d");
+                ctx.drawImage(videoEl, 0, 0);
+                const dataUrl = state.captureCanvas.toDataURL("image/jpeg", 0.9);
+                return dataUrl.replace(/^data:image\/jpeg;base64,/, "");
+            }
+
+            async function performOcr(content) {
+                if (state.settings?.provider === "azure") return callAzureVision(content);
+                return callGoogleVision(content);
+            }
+
+            async function callGoogleVision(content) {
+                if (!state.settings?.googleApiKey) throw new Error("Google Vision API key missing.");
+                const url = `https://vision.googleapis.com/v1/images:annotate?key=${encodeURIComponent(state.settings.googleApiKey)}`;
+                const body = {requests: [{image: {content}, features: [{type: "TEXT_DETECTION"}], imageContext: {languageHints: ["en"]}}]};
+                const response = await fetch(url, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Google Vision error: ${response.status} ${errorText}`);
+                }
+                const data = await response.json();
+                const annotations = data?.responses?.[0]?.textAnnotations || [];
+                appendLog(`Google Vision returned ${annotations.length} annotations.`);
+                return annotations[0]?.description || "";
+            }
+
+            async function callAzureVision(content) {
+                if (!state.settings?.azureEndpoint || !state.settings?.azureKey) throw new Error("Azure Vision settings incomplete.");
+                const endpoint = state.settings.azureEndpoint.replace(/\/+$/, "");
+                const url = `${endpoint}/vision/v3.2/read/analyze`;
+                const blob = await base64ToBlob(content, "image/jpeg");
+                const response = await fetch(url, {
+                    method: "POST",
+                    headers: {"Ocp-Apim-Subscription-Key": state.settings.azureKey, "Content-Type": "application/octet-stream"},
+                    body: blob
+                });
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Azure Vision error: ${response.status} ${errorText}`);
+                }
+                const operationLocation = response.headers.get("operation-location");
+                if (!operationLocation) throw new Error("Azure Vision no operation location.");
+                return pollAzureRead(operationLocation);
+            }
+
+            async function pollAzureRead(operationUrl) {
+                for (let attempt = 0; attempt < 12; attempt++) {
+                    await delay(attempt === 0 ? 500 : 1000);
+                    const response = await fetch(operationUrl, {headers: {"Ocp-Apim-Subscription-Key": state.settings.azureKey}});
+                    if (!response.ok) throw new Error(`Azure polling error: ${response.status}`);
+                    const data = await response.json();
+                    const status = (data.status || "").toLowerCase();
+                    if (status === "succeeded") {
+                        const lines = [];
+                        (data.analyzeResult?.readResults || []).forEach(page => {
+                            (page.lines || []).forEach(line => lines.push(line.text));
+                        });
+                        appendLog(`Azure Vision returned ${lines.length} lines.`);
+                        return lines.join("\n");
+                    }
+                    if (status === "failed") throw new Error("Azure Vision failed.");
+                }
+                throw new Error("Azure Vision timeout.");
+            }
+
+            function base64ToBlob(base64, mimeType = "image/jpeg") {
+                const byteCharacters = atob(base64);
+                const byteNumbers = new Array(byteCharacters.length);
+                for (let i = 0; i < byteCharacters.length; i++) byteNumbers[i] = byteCharacters.charCodeAt(i);
+                return new Blob([new Uint8Array(byteNumbers)], { type: mimeType });
+            }
+
+            function delay(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+
+            function extractSignage(fullText) {
+                if (!fullText) return null;
+                const candidates = fullText.split(/\n+/).map(l => l.trim()).filter(Boolean);
+                const filtered = candidates.filter(isPotentialSignLine);
+                if (filtered.length) {
+                    recognizedText.textContent = filtered.join("\n");
+                    return filtered[0];
+                }
+                return null;
+            }
+
+            function isPotentialSignLine(line) {
+                if (line.length < 4) return false;
+                const normalized = line.toLowerCase();
+                const longEnough = line.length <= 40;
+                const uppercaseRatio = line.replace(/[^A-Z]/g, "").length / line.length;
+                const keywordHit = detectionKeywords.some(k => normalized.includes(k));
+                return longEnough && (keywordHit || uppercaseRatio > 0.45);
+            }
+
+            function handleAnnouncement(text, simulated = false) {
+                recognizedText.textContent = text;
+                const now = Date.now();
+                const isDuplicate = text.toLowerCase() === state.lastAnnouncement.toLowerCase() && 
+                                    now - state.lastAnnouncedAt < state.minAnnouncementGapMs;
+                if (isDuplicate) {
+                    appendLog("Duplicate ignored.");
+                    return;
+                }
+                state.lastAnnouncement = text;
+                state.lastAnnouncedAt = now;
+                speakText(text);
+                appendLog(`${simulated ? "Simulated" : "Live"} signage: ${text}`);
+            }
+
+            function speakText(text, isRepeat = false) {
+                if (!("speechSynthesis" in window)) {
+                    statusMessage.textContent = "Speech synthesis not supported.";
+                    return;
+                }
+                state.synth.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = "en-US";
+                utterance.rate = isRepeat ? 1 : 0.95;
+                utterance.pitch = 1;
+                state.synth.speak(utterance);
+            }
+
+            function appendLog(message) {
+                const li = document.createElement("li");
+                li.textContent = `${new Date().toLocaleTimeString()} — ${message}`;
+                logList.prepend(li);
+                while (logList.children.length > 10) logList.removeChild(logList.lastChild);
+            }
+
+            loadSettings();
+            initCamera();
+        }
+
+        // =================================================================
+        // MODULE 3: NAVIGATION (COMPLETE ORIGINAL CODE)
+        // =================================================================
+        let module3Initialized = false;
+
+        function initModule3() {
+            if (module3Initialized) {
+                startModuleSwitchListener("navigation");
+                return;
+            }
+            module3Initialized = true;
+
+            const GRAPH = {
+                "QR_START": {
+                    next: ["QR_MAIN_1"],
+                    name: "Entrance",
+                    spokenName: "the hospital entrance"
+                },
+                "QR_MAIN_1": {
+                    next: ["QR_JUNCTION_A"],
+                    name: "Main Corridor 1",
+                    spokenName: "Main Corridor One"
+                },
+                "QR_JUNCTION_A": {
+                    next: ["QR_ROOM_1", "QR_ROOM_2", "QR_JUNCTION_B"],
+                    name: "Junction A",
+                    spokenName: "Junction A"
+                },
+                "QR_ROOM_1": {
+                    next: [],
+                    name: "Room 1 - Cardiology",
+                    spokenName: "Room One, Cardiology department"
+                },
+                "QR_ROOM_2": {
+                    next: [],
+                    name: "Room 2 - Orthopedics",
+                    spokenName: "Room Two, Orthopedics department"
+                },
+                "QR_JUNCTION_B": {
+                    next: ["QR_ROOM_3", "QR_ROOM_4", "QR_MAIN_2"],
+                    name: "Junction B",
+                    spokenName: "Junction B"
+                },
+                "QR_ROOM_3": {
+                    next: [],
+                    name: "Room 3 - Pediatrics",
+                    spokenName: "Room Three, Pediatrics department"
+                },
+                "QR_ROOM_4": {
+                    next: [],
+                    name: "Room 4 - Neurology",
+                    spokenName: "Room Four, Neurology department"
+                },
+                "QR_MAIN_2": {
+                    next: ["QR_ROOM_5"],
+                    name: "Main Corridor 2",
+                    spokenName: "Main Corridor Two"
+                },
+                "QR_ROOM_5": {
+                    next: [],
+                    name: "Room 5 - Emergency",
+                    spokenName: "Room Five, Emergency department"
+                }
+            };
+
+            const PATHS = {
+                "QR_ROOM_1": ["QR_START", "QR_MAIN_1", "QR_JUNCTION_A", "QR_ROOM_1"],
+                "QR_ROOM_2": ["QR_START", "QR_MAIN_1", "QR_JUNCTION_A", "QR_ROOM_2"],
+                "QR_ROOM_3": ["QR_START", "QR_MAIN_1", "QR_JUNCTION_A", "QR_JUNCTION_B", "QR_ROOM_3"],
+                "QR_ROOM_4": ["QR_START", "QR_MAIN_1", "QR_JUNCTION_A", "QR_JUNCTION_B", "QR_ROOM_4"],
+                "QR_ROOM_5": ["QR_START", "QR_MAIN_1", "QR_JUNCTION_A", "QR_JUNCTION_B", "QR_MAIN_2", "QR_ROOM_5"]
+            };
+
+            const INSTRUCTIONS = {
+                "QR_START": {
+                    "default": "You are at the hospital entrance. Go straight for 10 meters to reach Main Corridor One."
+                },
+                "QR_MAIN_1": {
+                    "default": "You are at Main Corridor One. Continue straight for 8 meters to reach Junction A."
+                },
+                "QR_JUNCTION_A": {
+                    "QR_ROOM_1": "You are at Junction A. Turn left and walk 5 meters to reach Room One, Cardiology.",
+                    "QR_ROOM_2": "You are at Junction A. Turn right and walk 5 meters to reach Room Two, Orthopedics.",
+                    "QR_ROOM_3": "You are at Junction A. Go straight for 10 meters to reach Junction B.",
+                    "QR_ROOM_4": "You are at Junction A. Go straight for 10 meters to reach Junction B.",
+                    "QR_ROOM_5": "You are at Junction A. Go straight for 10 meters to reach Junction B."
+                },
+                "QR_JUNCTION_B": {
+                    "QR_ROOM_3": "You are at Junction B. Turn left and walk 5 meters to reach Room Three, Pediatrics.",
+                    "QR_ROOM_4": "You are at Junction B. Turn right and walk 5 meters to reach Room Four, Neurology.",
+                    "QR_ROOM_5": "You are at Junction B. Continue straight for 8 meters to reach Main Corridor Two."
+                },
+                "QR_MAIN_2": {
+                    "QR_ROOM_5": "You are at Main Corridor Two. Go straight for 5 meters to reach Room Five, Emergency."
+                },
+                "QR_ROOM_1": {
+                    "QR_ROOM_1": "You have arrived at Room One, Cardiology department."
+                },
+                "QR_ROOM_2": {
+                    "QR_ROOM_2": "You have arrived at Room Two, Orthopedics department."
+                },
+                "QR_ROOM_3": {
+                    "QR_ROOM_3": "You have arrived at Room Three, Pediatrics department."
+                },
+                "QR_ROOM_4": {
+                    "QR_ROOM_4": "You have arrived at Room Four, Neurology department."
+                },
+                "QR_ROOM_5": {
+                    "QR_ROOM_5": "You have arrived at Room Five, Emergency department."
+                }
+            };
+
+            let systemState = "IDLE";
+            let destinationQR = null;
+            let currentPath = [];
+            let currentPathIndex = 0;
+            let lastScannedQR = null;
+            let lastScanTime = 0;
+            const SCAN_DELAY = 2000;
+            let html5QrCode = null;
+            let recognition = null;
+
+            const statusBadgeNav = document.getElementById("navStatusBadge");
+            const currentBadge = document.getElementById("currentBadge");
+            const nextBadge = document.getElementById("nextBadge");
+            const destDisplay = document.getElementById("destDisplay");
+            const spokenInstruction = document.getElementById("spokenInstruction");
+            const consoleBox = document.getElementById("console");
+            const pathStatus = document.getElementById("pathStatus");
+            const setDestBtn = document.getElementById("setDestBtn");
+            const resetBtn = document.getElementById("resetBtn");
+
+            function log(msg){
+                const timestamp = new Date().toLocaleTimeString();
+                consoleBox.innerText = `[${timestamp}] ${msg}\n` + consoleBox.innerText;
+            }
+
+            function setStatus(t){ 
+                statusBadgeNav.innerText = t; 
+                log(t);
+            }
+            
+            function setCurrent(t){ 
+                currentBadge.innerText = "Current: " + t; 
+            }
+            
+            function setNext(t){ 
+                nextBadge.innerText = "Next: " + t; 
+                spokenInstruction.innerText = t; 
+            }
+
+            function updateButtons(){
+                if(systemState === "LISTENING" || systemState === "SPEAKING" || systemState === "PROCESSING"){
+                    setDestBtn.disabled = true;
+                    resetBtn.disabled = false;
+                } else if(systemState === "NAVIGATING"){
+                    setDestBtn.disabled = true;
+                    resetBtn.disabled = false;
+                } else {
+                    setDestBtn.disabled = false;
+                    resetBtn.disabled = false;
+                }
+            }
+
+            function speakOnce(text){
+                return new Promise((resolve) => {
+                    if(speechSynthesis.speaking){
+                        speechSynthesis.cancel();
+                    }
+                    
+                    systemState = "SPEAKING";
+                    updateButtons();
+                    
+                    let utterance = new SpeechSynthesisUtterance(text);
+                    utterance.rate = 0.85;
+                    utterance.volume = 1.0;
+                    utterance.pitch = 1.0;
+                    utterance.lang = "en-US";
+                    
+                    utterance.onend = () => {
+                        resolve();
+                    };
+                    
+                    utterance.onerror = () => {
+                        log("Speech error occurred");
+                        resolve();
+                    };
+                    
+                    speechSynthesis.speak(utterance);
+                });
+            }
+
+            async function speakInstant(text){
+                return speakOnce(text);
+            }
+
+            function checkBrowserSupport(){
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                
+                if(!SpeechRecognition){
+                    alert("Speech Recognition not supported. Use Chrome, Edge, or Safari.");
+                    log("ERROR: Speech Recognition not supported");
+                    return false;
+                }
+                
+                if(!window.speechSynthesis){
+                    alert("Speech Synthesis not supported.");
+                    log("ERROR: Speech Synthesis not supported");
+                    return false;
+                }
+                
+                return true;
+            }
+
+            async function askDestination(){
+                if(systemState !== "IDLE" && systemState !== "NAVIGATING"){
+                    log("System busy, please wait");
+                    return;
+                }
+                
+                stopModuleSwitchListener();
+                if(!checkBrowserSupport()) return;
+                if(recognition){
+                    try { recognition.stop(); } catch(e){}
+                    recognition = null;
+                }
+                
+                speechSynthesis.cancel();
+                
+                destinationQR = null;
+                currentPath = [];
+                currentPathIndex = 0;
+                systemState = "SPEAKING";
+                updateButtons();
+                
+                destDisplay.innerText = "Listening...";
+                pathStatus.innerText = "Setting destination";
+                setCurrent("—");
+                setNext("—");
+                
+                await speakOnce("Welcome to Hospital Q R Navigation.");
+                await new Promise(resolve => setTimeout(resolve, 800));
+                await speakOnce("Please speak your destination room number.");
+                await new Promise(resolve => setTimeout(resolve, 600));
+                await speakOnce("Say Room One, Room Two, Room Three, Room Four, or Room Five.");
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                startDestinationListening();
+            }
+
+            function startDestinationListening(){
+                if(systemState === "LISTENING"){
+                    return;
+                }
+                
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                
+                recognition = new SpeechRecognition();
+                recognition.lang = "en-US";
+                recognition.interimResults = false;
+                recognition.maxAlternatives = 5;
+                recognition.continuous = false;
+                
+                systemState = "LISTENING";
+                updateButtons();
+                setStatus("🎤 Listening...");
+                
+                recognition.onstart = () => {
+                    log("Listening for room number");
+                };
+
+                recognition.onresult = async (event) => {
+                    systemState = "PROCESSING";
+                    updateButtons();
+                    
+                    let said = event.results[0][0].transcript.toLowerCase().trim();
+                    log("Heard: \"" + said + "\"");
+                    
+                    said = said.replace(/[^a-z0-9 ]/g, "").replace(/\s+/g, " ").trim();
+
+                    const targetModule = detectModuleTarget(said);
+                    if (targetModule && targetModule !== "navigation") {
+                        speakInstant(`Switching to ${moduleNames[targetModule]} module.`).then(() => {
+                            stopModuleSwitchListener();
+                            switchToModule(targetModule);
+                        });
+                        return;
+                    }
+                    
+                    let roomNumber = null;
+                    
+                    if(said.match(/(room\s*)?(1|one|won|first)/)) roomNumber = "1";
+                    else if(said.match(/(room\s*)?(2|two|to|second)/)) roomNumber = "2";
+                    else if(said.match(/(room\s*)?(3|three|tree|third)/)) roomNumber = "3";
+                    else if(said.match(/(room\s*)?(4|four|for|fourth)/)) roomNumber = "4";
+                    else if(said.match(/(room\s*)?(5|five|fife|fifth)/)) roomNumber = "5";
+                    
+                    if(roomNumber){
+                        destinationQR = "QR_ROOM_" + roomNumber;
+                        currentPath = PATHS[destinationQR];
+                        currentPathIndex = 0;
+                        
+                        const roomName = GRAPH[destinationQR].name;
+                        const spokenName = GRAPH[destinationQR].spokenName;
+                        destDisplay.innerText = roomName;
+                        pathStatus.innerText = "Navigate to " + roomName;
+                        
+                        await speakOnce("Destination set to " + spokenName);
+                        await new Promise(resolve => setTimeout(resolve, 600));
+                        await speakOnce("Please scan the entrance Q R code to begin.");
+                        
+                        systemState = "NAVIGATING";
+                        updateButtons();
+                        setStatus("✅ Ready to navigate");
+                        startModuleSwitchListener("navigation");
+                    } else {
+                        await speakOnce("Invalid room number. Please say Room One through Five.");
+                        systemState = "IDLE";
+                        updateButtons();
+                        setStatus("❌ Invalid - retry");
+                        setTimeout(askDestination, 2000);
+                    }
+                };
+
+                recognition.onerror = (event) => {
+                    log("Recognition error: " + event.error);
+                    systemState = "IDLE";
+                    updateButtons();
+                    setStatus("❌ Voice error");
+                    setTimeout(askDestination, 2000);
+                };
+
+                recognition.onend = () => {
+                    if(systemState === "LISTENING"){
+                        systemState = "IDLE";
+                        updateButtons();
+                        startModuleSwitchListener("navigation");
+                    }
+                };
+
+                try {
+                    recognition.start();
+                } catch(e){
+                    log("Error starting recognition: " + e.message);
+                    systemState = "IDLE";
+                    updateButtons();
+                }
+            }
+
+            async function initializeSystem(){
+                log("Initializing system...");
+                setStatus("🚀 Starting...");
+                systemState = "IDLE";
+                updateButtons();
+                
+                if(!checkBrowserSupport()){
+                    setStatus("❌ Browser not supported");
+                    return;
+                }
+                
+                try {
+                    html5QrCode = new Html5Qrcode("reader");
+                    
+                    const cameras = await Html5Qrcode.getCameras();
+                    if(!cameras || cameras.length === 0){
+                        setStatus("❌ No camera found");
+                        log("ERROR: No camera detected");
+                        return;
+                    }
+                    
+                    log("Camera detected: " + cameras[0].label);
+                    
+                    await html5QrCode.start(
+                        { facingMode: "environment" },
+                        { fps: 10, qrbox: { width: 250, height: 250 } },
+                        onScanSuccess,
+                        onScanFailure
+                    );
+                    
+                    setStatus("📷 Camera ready");
+                    log("QR Scanner active");
+                    
+                    setTimeout(askDestination, 1000);
+                    
+                } catch(err){
+                    setStatus("❌ Camera error");
+                    log("ERROR: " + err.message);
+                }
+            }
+
+            function onScanSuccess(qrData){
+                const now = Date.now();
+                if(now - lastScanTime < SCAN_DELAY) return;
+                
+                if(systemState === "SPEAKING" || systemState === "LISTENING" || systemState === "PROCESSING"){
+                    return;
+                }
+                
+                lastScanTime = now;
+                processQRCode(qrData);
+            }
+
+            function onScanFailure(err){
+            }
+
+            async function processQRCode(qrData){
+                if(systemState !== "NAVIGATING" && systemState !== "IDLE"){
+                    return;
+                }
+                
+                systemState = "PROCESSING";
+                updateButtons();
+                
+                log("Scanned: " + qrData);
+                
+                let qrCode = qrData;
+                try {
+                    const parsed = JSON.parse(qrData);
+                    if(parsed.id){
+                        qrCode = parsed.id;
+                        log("Parsed QR ID: " + qrCode);
+                    }
+                } catch(e) {
+                }
+                
+                if(!GRAPH[qrCode]){
+                    await speakInstant("Invalid Q R code. Please scan a valid hospital Q R code.");
+                    log("ERROR: Unknown QR code - " + qrCode);
+                    systemState = "NAVIGATING";
+                    updateButtons();
+                    return;
+                }
+                
+                lastScannedQR = qrCode;
+                const currentLocation = GRAPH[qrCode].spokenName;
+                setCurrent(GRAPH[qrCode].name);
+                
+                if(!destinationQR){
+                    await speakInstant("You are at " + currentLocation + ". Please set your destination first.");
+                    setStatus("⚠️ No destination set");
+                    systemState = "IDLE";
+                    updateButtons();
+                    setTimeout(askDestination, 1500);
+                    return;
+                }
+                
+                if(qrCode === destinationQR){
+                    const spokenName = GRAPH[qrCode].spokenName;
+                    await speakInstant("You have arrived at " + spokenName + ".");
+                    setStatus("🎯 Arrived!");
+                    pathStatus.innerText = "Arrived at " + GRAPH[qrCode].name;
+                    setNext("Destination reached");
+                    systemState = "IDLE";
+                    updateButtons();
+                    startModuleSwitchListener("navigation");
+                    return;
+                }
+                
+                const expectedQR = currentPath[currentPathIndex];
+                
+                if(qrCode !== expectedQR){
+                    await speakInstant("You are at " + currentLocation + ". You are off the correct path. Expected location is " + GRAPH[expectedQR].name + ".");
+                    setStatus("⚠️ Off route");
+                    log("ERROR: Expected " + expectedQR + " but got " + qrCode);
+                    systemState = "NAVIGATING";
+                    updateButtons();
+                    return;
+                }
+                
+                currentPathIndex++;
+                
+                if(currentPathIndex >= currentPath.length){
+                    await speakInstant("You have arrived at your destination.");
+                    setStatus("🎯 Arrived!");
+                    systemState = "IDLE";
+                    updateButtons();
+                    startModuleSwitchListener("navigation");
+                    return;
+                }
+                
+                const nextQR = currentPath[currentPathIndex];
+                let instruction = "";
+                
+                if(INSTRUCTIONS[qrCode] && INSTRUCTIONS[qrCode][destinationQR]){
+                    instruction = INSTRUCTIONS[qrCode][destinationQR];
+                } else if(INSTRUCTIONS[qrCode] && INSTRUCTIONS[qrCode]["default"]){
+                    instruction = INSTRUCTIONS[qrCode]["default"];
+                } else {
+                    instruction = "You are at " + currentLocation + ". Continue to " + GRAPH[nextQR].spokenName;
+                }
+                
+                setNext(instruction);
+                setStatus("✅ On track");
+                pathStatus.innerText = "Progress: " + currentPathIndex + "/" + (currentPath.length - 1);
+                
+                await speakInstant(instruction);
+                
+                systemState = "NAVIGATING";
+                updateButtons();
+            }
+
+            setDestBtn.onclick = () => {
+                if(systemState === "IDLE" || systemState === "NAVIGATING"){
+                    askDestination();
+                }
+            };
+
+            resetBtn.onclick = async () => {
+                speechSynthesis.cancel();
+                if(recognition){
+                    try { recognition.stop(); } catch(e){}
+                    recognition = null;
+                }
+                
+                destinationQR = null;
+                currentPath = [];
+                currentPathIndex = 0;
+                lastScannedQR = null;
+                systemState = "IDLE";
+                updateButtons();
+                stopModuleSwitchListener();
+
+                setCurrent("—");
+                setNext("—");
+                destDisplay.innerText = "Not set";
+                pathStatus.innerText = "Reset complete";
+
+                await speakOnce("System reset. Starting new navigation.");
+                setStatus("🔄 Reset");
+                
+                setTimeout(askDestination, 1500);
+            };
+
+            setTimeout(initializeSystem, 300);
+        }
+    </script>
+</body>
+</html>

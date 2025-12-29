@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Form Submitted Success</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#13ec5b",
+                        "background-light": "#f6f8f6",
+                        "background-dark": "#102216",
+                        "surface-dark": "#1A2E22",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                    animation: {
+                        'bounce-in': 'bounceIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
+                        'fade-in-up': 'fadeInUp 0.6s ease-out 0.2s forwards',
+                    },
+                    keyframes: {
+                        bounceIn: {
+                            '0%': { transform: 'scale(0.3)', opacity: '0' },
+                            '100%': { transform: 'scale(1)', opacity: '1' },
+                        },
+                        fadeInUp: {
+                            '0%': { transform: 'translateY(20px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' },
+                        }
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-white font-display antialiased overflow-x-hidden selection:bg-primary selection:text-background-dark">
+<div class="relative flex min-h-screen w-full flex-col">
+<!-- Top App Bar -->
+<div class="flex items-center p-4 justify-between z-10">
+<button class="text-slate-900 dark:text-white flex size-12 shrink-0 items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors">
+<span class="material-symbols-outlined">close</span>
+</button>
+<h2 class="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center pr-12 opacity-0">Success</h2>
+</div>
+<!-- Main Content (Centered) -->
+<div class="flex-1 flex flex-col items-center justify-center px-6 -mt-10">
+<!-- Success Animation Container -->
+<div class="relative mb-8 flex items-center justify-center animate-bounce-in opacity-0">
+<!-- Glow Effect -->
+<div class="absolute inset-0 bg-primary rounded-full blur-2xl opacity-20 transform scale-150"></div>
+<!-- Icon Circle -->
+<div class="relative flex h-32 w-32 items-center justify-center rounded-full bg-surface-dark border-2 border-primary shadow-[0_0_15px_rgba(19,236,91,0.3)]">
+<span class="material-symbols-outlined text-primary text-[64px]" style="font-variation-settings: 'FILL' 1, 'wght' 700;">check</span>
+</div>
+</div>
+<!-- Text Content -->
+<div class="flex flex-col items-center gap-2 text-center max-w-[480px] animate-fade-in-up opacity-0">
+<h1 class="text-slate-900 dark:text-white text-3xl font-extrabold leading-tight tracking-tight">Submission Successful</h1>
+<p class="text-slate-500 dark:text-slate-400 text-base font-normal leading-relaxed max-w-[320px]">
+                    Your information has been submitted successfully! You have been added to the triage queue.
+                </p>
+</div>
+<!-- Ticket Card -->
+<div class="mt-8 w-full max-w-sm animate-fade-in-up opacity-0" style="animation-delay: 0.4s;">
+<div class="flex items-center justify-between gap-4 rounded-xl bg-surface-dark p-4 shadow-lg border border-white/5">
+<div class="flex flex-col gap-1 flex-[2]">
+<p class="text-primary text-xs font-medium uppercase tracking-wider">Ticket ID</p>
+<p class="text-white text-2xl font-bold leading-tight tracking-tight">#458-B</p>
+<p class="text-slate-400 text-sm font-normal mt-1">Status: <span class="text-white font-medium">In Queue</span></p>
+</div>
+<!-- QR Code / Visual Identifier -->
+<div class="h-16 w-16 bg-white rounded-lg p-1 flex items-center justify-center overflow-hidden shrink-0 bg-cover bg-center" data-alt="Abstract QR code pattern representing the ticket identifier" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBgytfdU2p3QC2lDZmFGhy473d_7uMtI2Fz09mLQqexkOwpziRCE7lf2JJnfUEYUurh5BcTame5nRs6Ks5w2EVY-fIpbpC9ZUEetlsLtN7l9O8TUe36_WTHinPQizf-p5Hq-q-Vcf4M7zhOpSsncTdZTwybZlk4fZJkvX0qmxRQ7QWlAPhTUEBe1RX0dh_S1wSqdMKj4AwmO6Q7pDmGqVVLQi9j6Zmz4tuQ_YmEHk8zEAqp_FgnRNlrOfQVoWOsJUvBxjXPv0mYwhg");'>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Actions -->
+<div class="w-full p-4 pb-2 animate-fade-in-up opacity-0" style="animation-delay: 0.6s;">
+<button class="flex w-full cursor-pointer items-center justify-center overflow-hidden rounded-lg h-14 px-5 bg-primary hover:bg-[#10d650] active:scale-[0.98] transition-all text-background-dark text-base font-bold leading-normal tracking-[0.015em] shadow-[0_0_20px_rgba(19,236,91,0.2)]">
+<span class="mr-2 material-symbols-outlined text-[20px]">track_changes</span>
+<span class="truncate">Track My Status</span>
+</button>
+</div>
+<!-- Bottom Navigation -->
+<div class="flex gap-2 border-t border-white/10 bg-surface-dark px-4 pb-safe pt-2">
+<a class="flex flex-1 flex-col items-center justify-end gap-1 py-2 text-slate-400 hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined text-[24px]">home</span>
+<p class="text-xs font-medium leading-normal tracking-[0.015em]">Home</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 py-2 rounded-full text-primary" href="#">
+<span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 1;">format_list_numbered</span>
+<p class="text-xs font-medium leading-normal tracking-[0.015em]">Queue</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 py-2 text-slate-400 hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined text-[24px]">person</span>
+<p class="text-xs font-medium leading-normal tracking-[0.015em]">Profile</p>
+</a>
+</div>
+<!-- Safe Area Spacer for iPhones without Home Button -->
+<div class="h-4 bg-surface-dark w-full"></div>
+</div>
+</body></html>

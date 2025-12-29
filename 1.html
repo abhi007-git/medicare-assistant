@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Hospital Accessibility App</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#13b6ec",
+                        "background-light": "#f6f8f8",
+                        "background-dark": "#101d22",
+                        "surface-dark": "#1c2427",
+                        "surface-dark-highlight": "#283539",
+                    },
+                    fontFamily: {
+                        "display": ["Lexend", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom safe area spacing for notched phones */
+        .safe-pb {
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        
+        /* Entrance animation for the bottom nav */
+        @keyframes slideUp {
+            from {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .animate-slide-up {
+            animation: slideUp 0.5s ease-out forwards;
+        }
+
+        /* Material Icons Helper */
+        .material-symbols-outlined {
+            font-variation-settings:
+            'FILL' 1,
+            'wght' 400,
+            'GRAD' 0,
+            'opsz' 24
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display antialiased text-slate-900 dark:text-white h-full selection:bg-primary/30">
+<div class="relative flex min-h-screen w-full flex-col overflow-hidden max-w-md mx-auto shadow-2xl bg-surface-dark">
+<!-- Top Status Bar Area (Simulated) -->
+<div class="w-full h-11 bg-surface-dark z-20 sticky top-0"></div>
+<!-- Top App Bar -->
+<header class="flex items-center justify-between px-5 py-3 bg-surface-dark sticky top-11 z-20 border-b border-surface-dark-highlight">
+<div class="flex flex-col">
+<h1 class="text-white text-lg font-bold leading-tight tracking-tight">City General Hospital</h1>
+<div class="flex items-center gap-1.5 mt-0.5">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+</span>
+<span class="text-xs text-slate-400 font-medium">Checked-in</span>
+</div>
+</div>
+<button class="relative group cursor-pointer">
+<div class="h-10 w-10 rounded-full overflow-hidden border-2 border-surface-dark-highlight group-hover:border-primary/50 transition-colors">
+<img alt="Portrait of a smiling user" class="h-full w-full object-cover" data-alt="User profile avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAE0AIQCSBBXNozcZ2Ris0YowBVAcgeQ4OndPkoDcOSsn2a_w_exiCxBKiuRzEZhE2K91rK3RbOOQvnfBaKdWE705UqI30QR2eu8Rfb_E7ho9RM0IdAXkw8pdfuqMmOquaMdcqSvBwT_Qt3bots88N47mvsiRlL63afnMNsdDheK0pY6dNv94ge4sqQl-mof7Tb65RnkOEBlLajSFWP1C9KCE4ePsiLKSx4JZIpIaBIo8dc-_iAebNVGgW3UT0yvrwEcfszj7ktofLf"/>
+</div>
+</button>
+</header>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col gap-6 p-5 pb-24 overflow-y-auto bg-background-dark">
+<!-- Greeting -->
+<section>
+<h2 class="text-3xl font-bold text-white tracking-tight mb-1">Good evening, <span class="text-primary">Sarah</span></h2>
+<p class="text-slate-400 text-sm">Welcome back to the patient portal.</p>
+</section>
+<!-- Quick Stats/Info Cards -->
+<section class="grid grid-cols-2 gap-3">
+<div class="bg-surface-dark p-4 rounded-xl border border-surface-dark-highlight flex flex-col gap-3 hover:border-primary/30 transition-colors cursor-pointer group">
+<div class="h-10 w-10 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400 group-hover:bg-primary group-hover:text-black transition-colors">
+<span class="material-symbols-outlined">calendar_month</span>
+</div>
+<div>
+<p class="text-xs text-slate-400 font-medium">Next Visit</p>
+<p class="text-sm font-semibold text-white mt-0.5">Tomorrow, 9:00 AM</p>
+<p class="text-xs text-primary mt-1">Dr. Smith • Cardiology</p>
+</div>
+</div>
+<div class="bg-surface-dark p-4 rounded-xl border border-surface-dark-highlight flex flex-col gap-3 hover:border-primary/30 transition-colors cursor-pointer group">
+<div class="h-10 w-10 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-400 group-hover:bg-primary group-hover:text-black transition-colors">
+<span class="material-symbols-outlined">timer</span>
+</div>
+<div>
+<p class="text-xs text-slate-400 font-medium">Wait Time</p>
+<p class="text-sm font-semibold text-white mt-0.5">~ 15 Minutes</p>
+<p class="text-xs text-green-400 mt-1">On Schedule</p>
+</div>
+</div>
+</section>
+<!-- Quick Actions Grid -->
+<section>
+<h3 class="text-sm font-semibold text-white uppercase tracking-wider mb-3 opacity-80">I need to...</h3>
+<div class="grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-3">
+<button class="relative h-32 w-full rounded-xl overflow-hidden group">
+<div class="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-110" data-alt="Doctor interacting with a digital tablet in a hospital hallway" style="background-image: linear-gradient(to top, rgba(0,0,0,0.8), rgba(0,0,0,0)), url('https://lh3.googleusercontent.com/aida-public/AB6AXuBbVkVW3yukgFM5serJWz57bGacbxuiS6-PNYeowQ2bara6n4sDxeQEQOKNYekuiQrv8uwdj5XtoU93bssmMD3TyRtK2asW9JbyLiX1VXUc44xnfjdo37GFYahYDmDh8WVePnF99WzNDtHSs1rj_dgWFQLINDYnD50SD_nkHLUhxf7CZ3SnkZSvF6t7T5jvQ06nzqNbFWQCBgJgUeMMlJBM7EykgIqJLB59fzKj-CTvjK2ke235vcK5Mfu6gQbwKmL_sSk-MqYvWco7');"></div>
+<div class="absolute inset-0 p-4 flex flex-col justify-end">
+<span class="text-white font-bold text-base">Find a Doctor</span>
+</div>
+</button>
+<button class="relative h-32 w-full rounded-xl overflow-hidden group">
+<div class="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-110" data-alt="Hospital emergency sign glowing red at night" style="background-image: linear-gradient(to top, rgba(0,0,0,0.8), rgba(0,0,0,0)), url('https://lh3.googleusercontent.com/aida-public/AB6AXuD7Lr148anCxn10AdxrMyc_TyZf-SUCJgaIpzcxftcvVflgXyCvv1-g6aAyUJfLjZgImUdAJjBEI-_UP00AletUr0qXM8zj76N2CUbPa_cJb9d-NRoydb_g8z0WUsn0KAhGroAB4n8UuaggKQGqOmhUMBDnD5mDvrm9I5AglMNPKaPMhVQBiFsahV3QT-MVlYgvjzS3-z7dry8sUb-UtK73gIOyfie85dA6o9-J8fszs_ubxTj3qo1n9qa7VMpE7Q2zBHp1mTpU1Wmf');"></div>
+<div class="absolute inset-0 p-4 flex flex-col justify-end">
+<span class="text-white font-bold text-base">Emergency Info</span>
+</div>
+</button>
+<button class="relative h-32 w-full rounded-xl overflow-hidden group bg-surface-dark border border-surface-dark-highlight">
+<div class="absolute inset-0 p-4 flex flex-col justify-end items-start gap-2">
+<div class="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center text-primary mb-auto">
+<span class="material-symbols-outlined text-[20px]">accessibility_new</span>
+</div>
+<span class="text-white font-bold text-base">Accessibility Services</span>
+</div>
+</button>
+</div>
+</section>
+<!-- Notification Area -->
+<div class="bg-primary/10 border border-primary/20 rounded-xl p-4 flex gap-3 items-start">
+<span class="material-symbols-outlined text-primary shrink-0">info</span>
+<div>
+<h4 class="text-white font-medium text-sm">Visitor Policy Update</h4>
+<p class="text-slate-400 text-xs mt-1">Masks are currently required in the ICU waiting areas. Thank you for your cooperation.</p>
+</div>
+</div>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 left-0 right-0 z-50 bg-surface-dark/95 backdrop-blur-md border-t border-surface-dark-highlight safe-pb animate-slide-up max-w-md mx-auto">
+<div class="flex justify-between items-end px-2 pt-2 pb-1">
+<!-- Home Tab (Active) -->
+<a class="flex flex-1 flex-col items-center gap-1 p-2 group active:scale-95 transition-transform" href="#">
+<div class="relative">
+<!-- Active Indicator Glow -->
+<div class="absolute -inset-3 bg-primary/20 rounded-full blur-lg opacity-50"></div>
+<span class="material-symbols-outlined text-primary relative z-10" style="font-variation-settings: 'FILL' 1;">home</span>
+</div>
+<span class="text-[10px] font-medium text-primary">Home</span>
+</a>
+<!-- Form Tab -->
+<a class="flex flex-1 flex-col items-center gap-1 p-2 group active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-slate-200 transition-colors" style="font-variation-settings: 'FILL' 0;">description</span>
+<span class="text-[10px] font-medium text-slate-400 group-hover:text-slate-200 transition-colors">Form</span>
+</a>
+<!-- Reader Tab -->
+<a class="flex flex-1 flex-col items-center gap-1 p-2 group active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-slate-200 transition-colors" style="font-variation-settings: 'FILL' 0;">menu_book</span>
+<span class="text-[10px] font-medium text-slate-400 group-hover:text-slate-200 transition-colors">Reader</span>
+</a>
+<!-- Navigate Tab -->
+<a class="flex flex-1 flex-col items-center gap-1 p-2 group active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-slate-200 transition-colors" style="font-variation-settings: 'FILL' 0;">explore</span>
+<span class="text-[10px] font-medium text-slate-400 group-hover:text-slate-200 transition-colors">Navigate</span>
+</a>
+<!-- Queue Tab -->
+<a class="flex flex-1 flex-col items-center gap-1 p-2 group active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-slate-200 transition-colors" style="font-variation-settings: 'FILL' 0;">confirmation_number</span>
+<span class="text-[10px] font-medium text-slate-400 group-hover:text-slate-200 transition-colors">Queue</span>
+</a>
+</div>
+<!-- Safe Area Bottom Spacer (Simulated for non-env support environments) -->
+<div class="h-[env(safe-area-inset-bottom,20px)] w-full"></div>
+</nav>
+</div>
+</body></html>

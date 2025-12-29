@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#101d22">
+    <meta name="description" content="Hospital Accessibility Assistant for Visually Impaired Patients">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="manifest.json">
+    <title>MediCare Assistant</title>
+    
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    
+    <!-- QR Scanner -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#13b6ec",
+                        "background": "#101d22",
+                        "surface": "#1c2427",
+                        "surface-light": "#283539",
+                        "border": "#283539",
+                        "text-main": "#f4f4f4",
+                        "text-muted": "#9db2b9",
+                        "success": "#22c55e",
+                        "warning": "#eab308",
+                        "danger": "#ef4444",
+                    },
+                    fontFamily: {
+                        "display": ["Lexend", "sans-serif"]
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Lexend', sans-serif;
+            background: #101d22;
+            color: #f4f4f4;
+            overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        /* Material Icons */
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            user-select: none;
+        }
+        
+        /* Hide all screens by default */
+        .screen { display: none; }
+        .screen.active { display: flex; }
+        
+        /* Safe area for notched phones */
+        .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 20px); }
+        
+        /* Voice listening indicator */
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); opacity: 0.5; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+            100% { transform: scale(0.95); opacity: 0.5; }
+        }
+        
+        .listening-pulse {
+            animation: pulse-ring 1.5s ease-in-out infinite;
+        }
+        
+        /* Smooth transitions */
+        .screen { 
+            transition: opacity 0.3s ease;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        
+        /* Bottom nav animation */
+        @keyframes slideUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .bottom-nav { animation: slideUp 0.5s ease-out; }
+        
+        /* Large touch targets */
+        button, a { min-height: 48px; min-width: 48px; }
+        
+        /* High contrast focus */
+        *:focus-visible {
+            outline: 3px solid #13b6ec;
+            outline-offset: 2px;
+        }
+        
+        /* Screen reader only */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border-width: 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="app" class="relative max-w-md mx-auto shadow-2xl min-h-screen bg-background">
+        
+        <!-- HOME SCREEN -->
+        <div id="home-screen" class="screen active">
+            <!-- Header -->
+            <header class="p-6 pb-4 bg-surface border-b border-border">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 bg-primary/20 rounded-xl flex items-center justify-center">
+                            <span class="material-symbols-outlined text-primary text-2xl">local_hospital</span>
+                        </div>
+                        <div>
+                            <h1 class="text-xl font-bold text-text-main">MediCare</h1>
+                            <p class="text-xs text-text-muted">Voice Assistant</p>
+                        </div>
+                    </div>
+                    <button id="settings-btn" class="w-12 h-12 rounded-xl bg-surface-light flex items-center justify-center" aria-label="Settings">
+                        <span class="material-symbols-outlined text-text-muted">settings</span>
+                    </button>
+                </div>
+                
+                <!-- Voice Status -->
+                <div id="voice-status" class="mt-4 p-3 bg-surface-light rounded-xl flex items-center gap-3">
+                    <div class="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center listening-pulse">
+                        <span class="material-symbols-outlined text-primary">mic</span>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-sm font-medium text-text-main">Voice Active</p>
+                        <p id="voice-status-text" class="text-xs text-text-muted">Say "Help" for commands</p>
+                    </div>
+                </div>
+            </header>
+            
+            <!-- Main Content -->
+            <main class="flex-1 p-6 pb-24 overflow-y-auto">
+                <h2 class="text-2xl font-bold mb-6">How can I help you?</h2>
+                
+                <!-- Action Cards -->
+                <div class="grid grid-cols-2 gap-4">
+                    <!-- Voice Form -->
+                    <button class="voice-form-btn p-6 bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl flex flex-col items-center gap-3 shadow-lg active:scale-95 transition-transform" aria-label="Voice Form Filling">
+                        <span class="material-symbols-outlined text-5xl text-white">description</span>
+                        <span class="text-white font-semibold text-center">Voice Form</span>
+                    </button>
+                    
+                    <!-- Queue Status -->
+                    <button class="queue-btn p-6 bg-gradient-to-br from-orange-600 to-orange-800 rounded-2xl flex flex-col items-center gap-3 shadow-lg active:scale-95 transition-transform" aria-label="Queue Status">
+                        <span class="material-symbols-outlined text-5xl text-white">confirmation_number</span>
+                        <span class="text-white font-semibold text-center">My Queue</span>
+                    </button>
+                    
+                    <!-- Navigation -->
+                    <button class="navigation-btn p-6 bg-gradient-to-br from-purple-600 to-purple-800 rounded-2xl flex flex-col items-center gap-3 shadow-lg active:scale-95 transition-transform" aria-label="Hospital Navigation">
+                        <span class="material-symbols-outlined text-5xl text-white">navigation</span>
+                        <span class="text-white font-semibold text-center">Navigate</span>
+                    </button>
+                    
+                    <!-- Health Reader -->
+                    <button class="reader-btn p-6 bg-gradient-to-br from-green-600 to-green-800 rounded-2xl flex flex-col items-center gap-3 shadow-lg active:scale-95 transition-transform" aria-label="Sign Reader">
+                        <span class="material-symbols-outlined text-5xl text-white">visibility</span>
+                        <span class="text-white font-semibold text-center">Read Signs</span>
+                    </button>
+                </div>
+                
+                <!-- Voice Commands Help -->
+                <div class="mt-8 p-4 bg-surface rounded-xl border border-border">
+                    <h3 class="font-semibold mb-3 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary">help</span>
+                        Voice Commands
+                    </h3>
+                    <ul class="space-y-2 text-sm text-text-muted">
+                        <li>• "Help" - Hear all commands</li>
+                        <li>• "Voice Form" - Start form filling</li>
+                        <li>• "My Queue" - Check queue status</li>
+                        <li>• "Navigate" - Start navigation</li>
+                        <li>• "Read Signs" - Read hospital signs</li>
+                        <li>• "Go Home" - Return to home</li>
+                    </ul>
+                </div>
+            </main>
+        </div>
+        
+        <!-- VOICE FORM SCREEN -->
+        <div id="form-screen" class="screen">
+            <header class="p-4 bg-surface border-b border-border flex items-center gap-4">
+                <button class="back-btn w-12 h-12 rounded-xl bg-surface-light flex items-center justify-center" aria-label="Back">
+                    <span class="material-symbols-outlined">arrow_back</span>
+                </button>
+                <h1 class="text-xl font-bold flex-1">Voice Form</h1>
+            </header>
+            
+            <main class="flex-1 p-6 pb-24 overflow-y-auto">
+                <!-- Voice Indicator -->
+                <div id="form-voice-status" class="mb-6 p-4 bg-surface rounded-xl text-center">
+                    <div class="w-20 h-20 mx-auto mb-3 bg-primary/20 rounded-full flex items-center justify-center listening-pulse">
+                        <span class="material-symbols-outlined text-primary text-4xl">mic</span>
+                    </div>
+                    <p id="form-instruction" class="text-lg font-semibold mb-2">Say "Start Form" to begin</p>
+                    <p class="text-sm text-text-muted">I'm listening...</p>
+                </div>
+                
+                <!-- Form Fields -->
+                <div class="space-y-4">
+                    <div class="p-4 bg-surface rounded-xl border border-border">
+                        <label class="text-sm text-text-muted mb-1 block">Name</label>
+                        <input type="text" id="form-name" readonly class="w-full bg-transparent text-lg font-medium text-text-main border-none outline-none" placeholder="Not filled yet" aria-label="Patient name">
+                    </div>
+                    
+                    <div class="p-4 bg-surface rounded-xl border border-border">
+                        <label class="text-sm text-text-muted mb-1 block">Age</label>
+                        <input type="text" id="form-age" readonly class="w-full bg-transparent text-lg font-medium text-text-main border-none outline-none" placeholder="Not filled yet" aria-label="Patient age">
+                    </div>
+                    
+                    <div class="p-4 bg-surface rounded-xl border border-border">
+                        <label class="text-sm text-text-muted mb-1 block">Phone</label>
+                        <input type="text" id="form-phone" readonly class="w-full bg-transparent text-lg font-medium text-text-main border-none outline-none" placeholder="Not filled yet" aria-label="Phone number">
+                    </div>
+                    
+                    <div class="p-4 bg-surface rounded-xl border border-border">
+                        <label class="text-sm text-text-muted mb-1 block">Symptoms</label>
+                        <textarea id="form-symptoms" readonly rows="3" class="w-full bg-transparent text-lg font-medium text-text-main border-none outline-none resize-none" placeholder="Not filled yet" aria-label="Medical symptoms"></textarea>
+                    </div>
+                </div>
+                
+                <!-- Actions -->
+                <div class="mt-6 space-y-3">
+                    <button id="form-submit-btn" class="w-full h-14 bg-primary rounded-xl font-bold text-background shadow-lg active:scale-95 transition-transform">
+                        Submit Form
+                    </button>
+                    <button id="form-reset-btn" class="w-full h-14 bg-surface-light rounded-xl font-semibold text-text-main active:scale-95 transition-transform">
+                        Reset Form
+                    </button>
+                </div>
+                
+                <!-- Voice Commands -->
+                <div class="mt-6 p-4 bg-surface rounded-xl border border-border">
+                    <p class="text-sm text-text-muted">Say: "Start Form", "Repeat", "Skip", "Back", "Submit"</p>
+                </div>
+            </main>
+        </div>
+        
+        <!-- QUEUE STATUS SCREEN -->
+        <div id="queue-screen" class="screen">
+            <header class="p-4 bg-surface border-b border-border flex items-center gap-4">
+                <button class="back-btn w-12 h-12 rounded-xl bg-surface-light flex items-center justify-center" aria-label="Back">
+                    <span class="material-symbols-outlined">arrow_back</span>
+                </button>
+                <h1 class="text-xl font-bold flex-1">Queue Status</h1>
+            </header>
+            
+            <main class="flex-1 p-6 pb-24 overflow-y-auto">
+                <!-- Token Display -->
+                <div class="mb-6 p-8 bg-surface rounded-2xl text-center border-2 border-primary/30">
+                    <p class="text-sm text-text-muted mb-2">Your Token</p>
+                    <h2 id="queue-token" class="text-6xl font-bold text-primary mb-4" aria-live="polite">--</h2>
+                    <div id="queue-emergency-badge" class="hidden inline-flex items-center gap-2 px-4 py-2 bg-danger/20 border border-danger rounded-xl">
+                        <span class="material-symbols-outlined text-danger">warning</span>
+                        <span class="text-danger font-bold text-sm">EMERGENCY</span>
+                    </div>
+                </div>
+                
+                <!-- Queue Info -->
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div class="p-4 bg-surface rounded-xl text-center">
+                        <p class="text-sm text-text-muted mb-1">Wait Time</p>
+                        <p id="queue-wait" class="text-2xl font-bold text-text-main" aria-live="polite">--</p>
+                    </div>
+                    
+                    <div class="p-4 bg-surface rounded-xl text-center">
+                        <p class="text-sm text-text-muted mb-1">Now Serving</p>
+                        <p id="queue-current" class="text-2xl font-bold text-success" aria-live="assertive">--</p>
+                    </div>
+                </div>
+                
+                <!-- Status Message -->
+                <div class="mb-6 p-4 bg-surface-light rounded-xl">
+                    <div class="flex items-start gap-3">
+                        <span class="material-symbols-outlined text-primary text-2xl">info</span>
+                        <p id="queue-status-msg" class="flex-1 text-text-main" aria-live="polite">Connecting to queue...</p>
+                    </div>
+                </div>
+                
+                <!-- Actions -->
+                <div class="space-y-3">
+                    <button id="queue-speak-btn" class="w-full h-14 bg-primary rounded-xl font-bold text-background shadow-lg flex items-center justify-center gap-2 active:scale-95 transition-transform">
+                        <span class="material-symbols-outlined">volume_up</span>
+                        Speak My Status
+                    </button>
+                    <button id="queue-refresh-btn" class="w-full h-14 bg-surface-light rounded-xl font-semibold text-text-main flex items-center justify-center gap-2 active:scale-95 transition-transform">
+                        <span class="material-symbols-outlined">refresh</span>
+                        Refresh
+                    </button>
+                </div>
+                
+                <!-- Voice Commands -->
+                <div class="mt-6 p-4 bg-surface rounded-xl border border-border">
+                    <p class="text-sm text-text-muted">Say: "Status", "My Token", "Position", "Wait Time"</p>
+                </div>
+            </main>
+        </div>
+        
+        <!-- NAVIGATION SCREEN -->
+        <div id="navigation-screen" class="screen">
+            <header class="p-4 bg-surface border-b border-border flex items-center gap-4">
+                <button class="back-btn w-12 h-12 rounded-xl bg-surface-light flex items-center justify-center" aria-label="Back">
+                    <span class="material-symbols-outlined">arrow_back</span>
+                </button>
+                <h1 class="text-xl font-bold flex-1">Navigation</h1>
+            </header>
+            
+            <main class="flex-1 p-6 pb-24 overflow-y-auto">
+                <!-- Destination Card -->
+                <div class="mb-6 p-6 bg-surface rounded-2xl border border-border">
+                    <p class="text-sm text-text-muted mb-2">Destination</p>
+                    <h2 id="nav-destination" class="text-2xl font-bold text-text-main mb-4">Not Set</h2>
+                    <button id="nav-set-destination-btn" class="w-full h-12 bg-primary rounded-xl font-bold text-background shadow-lg active:scale-95 transition-transform">
+                        Set Destination
+                    </button>
+                </div>
+                
+                <!-- QR Scanner -->
+                <div id="nav-scanner" class="mb-6 p-4 bg-surface rounded-xl border-2 border-dashed border-border">
+                    <div class="aspect-square bg-background rounded-xl flex items-center justify-center mb-3">
+                        <div id="qr-reader" class="w-full h-full"></div>
+                    </div>
+                    <p class="text-center text-sm text-text-muted">Point camera at QR code</p>
+                </div>
+                
+                <!-- Current Instruction -->
+                <div id="nav-instruction" class="mb-6 p-6 bg-primary/10 rounded-xl border border-primary/30">
+                    <div class="flex items-start gap-3">
+                        <span class="material-symbols-outlined text-primary text-3xl">directions</span>
+                        <div class="flex-1">
+                            <p class="text-sm text-text-muted mb-1">Navigation</p>
+                            <p id="nav-instruction-text" class="text-lg font-semibold text-text-main">Scan entrance QR to begin</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Actions -->
+                <button id="nav-reset-btn" class="w-full h-14 bg-surface-light rounded-xl font-semibold text-text-main active:scale-95 transition-transform">
+                    Reset Navigation
+                </button>
+                
+                <!-- Voice Commands -->
+                <div class="mt-6 p-4 bg-surface rounded-xl border border-border">
+                    <p class="text-sm text-text-muted">Say: "Room One", "Room Two", "Room Three", "Room Four", "Room Five"</p>
+                </div>
+            </main>
+        </div>
+        
+        <!-- SIGN READER SCREEN -->
+        <div id="reader-screen" class="screen">
+            <header class="p-4 bg-surface border-b border-border flex items-center gap-4">
+                <button class="back-btn w-12 h-12 rounded-xl bg-surface-light flex items-center justify-center" aria-label="Back">
+                    <span class="material-symbols-outlined">arrow_back</span>
+                </button>
+                <h1 class="text-xl font-bold flex-1">Sign Reader</h1>
+                <button id="reader-settings-btn" class="w-12 h-12 rounded-xl bg-surface-light flex items-center justify-center" aria-label="Reader Settings">
+                    <span class="material-symbols-outlined">settings</span>
+                </button>
+            </header>
+            
+            <main class="flex-1 p-6 pb-24 overflow-y-auto">
+                <!-- Camera View -->
+                <div class="mb-6">
+                    <div class="aspect-video bg-background rounded-xl overflow-hidden relative">
+                        <video id="reader-camera" autoplay playsinline muted class="w-full h-full object-cover"></video>
+                        <div id="reader-status-badge" class="absolute top-4 left-4 px-3 py-1 bg-background/80 backdrop-blur rounded-full text-sm font-semibold">
+                            <span class="text-text-muted">Idle</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Detected Text -->
+                <div class="mb-6 p-4 bg-surface rounded-xl border border-border min-h-32">
+                    <p class="text-sm text-text-muted mb-2">Detected Text</p>
+                    <p id="reader-text" class="text-lg font-medium text-text-main" aria-live="polite">Point camera at signs or text</p>
+                </div>
+                
+                <!-- Actions -->
+                <div class="space-y-3">
+                    <button id="reader-toggle-btn" class="w-full h-14 bg-primary rounded-xl font-bold text-background shadow-lg flex items-center justify-center gap-2 active:scale-95 transition-transform">
+                        <span class="material-symbols-outlined">photo_camera</span>
+                        Start Scanning
+                    </button>
+                    <button id="reader-speak-last-btn" class="w-full h-14 bg-surface-light rounded-xl font-semibold text-text-main flex items-center justify-center gap-2 active:scale-95 transition-transform">
+                        <span class="material-symbols-outlined">volume_up</span>
+                        Repeat Last
+                    </button>
+                </div>
+                
+                <!-- Voice Commands -->
+                <div class="mt-6 p-4 bg-surface rounded-xl border border-border">
+                    <p class="text-sm text-text-muted">Say: "Start Scanning", "Repeat", "Stop"</p>
+                </div>
+            </main>
+        </div>
+        
+        <!-- SETTINGS SCREEN -->
+        <div id="settings-screen" class="screen">
+            <header class="p-4 bg-surface border-b border-border flex items-center gap-4">
+                <button class="back-btn w-12 h-12 rounded-xl bg-surface-light flex items-center justify-center" aria-label="Back">
+                    <span class="material-symbols-outlined">arrow_back</span>
+                </button>
+                <h1 class="text-xl font-bold flex-1">Settings</h1>
+            </header>
+            
+            <main class="flex-1 p-6 pb-24 overflow-y-auto">
+                <!-- Voice Settings -->
+                <div class="mb-6">
+                    <h3 class="font-semibold mb-3 text-text-main">Voice Settings</h3>
+                    <div class="space-y-3">
+                        <div class="p-4 bg-surface rounded-xl">
+                            <label class="flex items-center justify-between">
+                                <span>Voice Speed</span>
+                                <input type="range" id="voice-speed" min="0.5" max="2" step="0.1" value="0.9" class="w-32">
+                            </label>
+                        </div>
+                        
+                        <div class="p-4 bg-surface rounded-xl">
+                            <label class="flex items-center justify-between">
+                                <span>Voice Volume</span>
+                                <input type="range" id="voice-volume" min="0" max="1" step="0.1" value="1" class="w-32">
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Firebase Config -->
+                <div class="mb-6">
+                    <h3 class="font-semibold mb-3 text-text-main">Firebase Configuration</h3>
+                    <div class="space-y-3">
+                        <div class="p-4 bg-surface rounded-xl">
+                            <label class="block text-sm text-text-muted mb-2">API Key</label>
+                            <input type="text" id="firebase-api-key" placeholder="Enter Firebase API Key" class="w-full px-3 py-2 bg-background border border-border rounded-lg text-text-main">
+                        </div>
+                        
+                        <div class="p-4 bg-surface rounded-xl">
+                            <label class="block text-sm text-text-muted mb-2">Project ID</label>
+                            <input type="text" id="firebase-project-id" placeholder="Enter Project ID" class="w-full px-3 py-2 bg-background border border-border rounded-lg text-text-main">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- About -->
+                <div class="p-4 bg-surface rounded-xl">
+                    <h3 class="font-semibold mb-2 text-text-main">About</h3>
+                    <p class="text-sm text-text-muted mb-2">MediCare Assistant v1.0</p>
+                    <p class="text-sm text-text-muted">Designed for visually impaired patients</p>
+                </div>
+            </main>
+        </div>
+        
+        <!-- Bottom Navigation -->
+        <nav class="bottom-nav fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-surface border-t border-border safe-bottom z-50">
+            <div class="flex items-center justify-around px-2 py-2">
+                <button class="nav-item flex-1 flex flex-col items-center gap-1 py-2 rounded-xl active:bg-surface-light transition-colors" data-screen="home" aria-label="Home">
+                    <span class="material-symbols-outlined text-2xl">home</span>
+                    <span class="text-xs font-medium">Home</span>
+                </button>
+                
+                <button class="nav-item flex-1 flex flex-col items-center gap-1 py-2 rounded-xl active:bg-surface-light transition-colors" data-screen="form" aria-label="Form">
+                    <span class="material-symbols-outlined text-2xl">description</span>
+                    <span class="text-xs font-medium">Form</span>
+                </button>
+                
+                <button class="nav-item flex-1 flex flex-col items-center gap-1 py-2 rounded-xl active:bg-surface-light transition-colors" data-screen="queue" aria-label="Queue">
+                    <span class="material-symbols-outlined text-2xl">confirmation_number</span>
+                    <span class="text-xs font-medium">Queue</span>
+                </button>
+                
+                <button class="nav-item flex-1 flex flex-col items-center gap-1 py-2 rounded-xl active:bg-surface-light transition-colors" data-screen="navigation" aria-label="Navigate">
+                    <span class="material-symbols-outlined text-2xl">navigation</span>
+                    <span class="text-xs font-medium">Navigate</span>
+                </button>
+                
+                <button class="nav-item flex-1 flex flex-col items-center gap-1 py-2 rounded-xl active:bg-surface-light transition-colors" data-screen="reader" aria-label="Reader">
+                    <span class="material-symbols-outlined text-2xl">visibility</span>
+                    <span class="text-xs font-medium">Reader</span>
+                </button>
+            </div>
+        </nav>
+    </div>
+    
+    <script src="app-mobile.js"></script>
+</body>
+</html>
