@@ -271,23 +271,27 @@ class MediCareApp {
             return;
         }
         
-        if (command.includes('go home') || command.includes('home screen')) {
+        if (command.includes('exit') || command.includes('go home') || command.includes('home screen')) {
             this.navigateTo('home');
+            this.speak('Returning to home screen.');
             return;
         }
         
-        if (command.includes('voice form') || command.includes('form filling') || command.includes('form')) {
+        if (command.includes('form')) {
             this.navigateTo('form');
+            this.speak('Form section. Say start to begin filling the form.');
             return;
         }
         
         if (command.includes('queue') || command.includes('token')) {
             this.navigateTo('queue');
+            setTimeout(() => this.speakQueueStatus(), 500);
             return;
         }
         
         if (command.includes('navigate') || command.includes('navigation')) {
             this.navigateTo('navigation');
+            setTimeout(() => this.listRooms(), 500);
             return;
         }
         
@@ -316,12 +320,14 @@ class MediCareApp {
     speakHelp() {
         const helpMessage = `
             Available commands:
-            Say Voice Form to fill registration form.
+            Say Form to go to form section.
+            Say Start to begin filling the form.
             Say Queue to check your queue status.
-            Say Navigate to get hospital directions.
-            Say Read or Reader to scan signs.
-            Say Go Home to return to main screen.
-            Say Stop to stop speech.
+            Say Navigate to hear hospital room list.
+            Say a number one to six to navigate to that room.
+            Say Read or Reader to scan hospital signs.
+            Say Exit to return to home screen.
+            Say Stop to stop speech at any time.
             I am always listening for your commands.
         `;
         this.speak(helpMessage, true);
@@ -406,7 +412,7 @@ class MediCareApp {
     // ========================================================================
     
     handleFormCommand(command) {
-        if (command.includes('start form') || command.includes('begin') || command.includes('filling')) {
+        if (command.includes('start') && !this.formActive) {
             this.startForm();
         } else if (command.includes('yes') && this.waitingForOptionalConfirmation) {
             this.waitingForOptionalConfirmation = false;
@@ -416,6 +422,11 @@ class MediCareApp {
             this.speak('Okay, skipping.');
             this.currentFieldIndex++;
             setTimeout(() => this.askFormQuestion(), 1000);
+        } else if (command.includes('next') || command.includes('continue')) {
+            if (this.formActive) {
+                this.currentFieldIndex++;
+                this.askFormQuestion();
+            }
         } else if (command.includes('repeat')) {
             this.repeatFormQuestion();
         } else if (command.includes('skip')) {
@@ -649,19 +660,33 @@ class MediCareApp {
     // ========================================================================
     
     handleNavigationCommand(command) {
-        if (command.includes('room') || command.includes('ward') || command.includes('department')) {
-            // Extract room number
-            const roomMatch = command.match(/room ?(one|two|three|four|five|six|1|2|3|4|5|6)|cardiology|orthopedics|pediatrics|neurology|emergency|radiology/i);
-            if (roomMatch) {
-                const input = roomMatch[0].toLowerCase();
-                const roomNumbers = { 
-                    'one': '1', 'two': '2', 'three': '3', 'four': '4', 'five': '5', 'six': '6',
-                    'cardiology': '1', 'orthopedics': '2', 'pediatrics': '3', 
-                    'neurology': '4', 'emergency': '5', 'radiology': '6'
-                };
-                const room = roomNumbers[input] || input;
+        // Check for direct number input (1-6)
+        const numberMatch = command.match(/\b(one|two|three|four|five|six|1|2|3|4|5|6)\b/);
+        if (numberMatch) {
+            const roomNumbers = { 
+                'one': '1', 'two': '2', 'three': '3', 'four': '4', 'five': '5', 'six': '6',
+                '1': '1', '2': '2', '3': '3', '4': '4', '5': '5', '6': '6'
+            };
+            const room = roomNumbers[numberMatch[1].toLowerCase()];
+            if (room) {
                 this.setNavDestination(room);
+                return;
             }
+        }
+        
+        // Check for department names
+        if (command.includes('cardiology')) {
+            this.setNavDestination('1');
+        } else if (command.includes('orthopedics')) {
+            this.setNavDestination('2');
+        } else if (command.includes('pediatrics')) {
+            this.setNavDestination('3');
+        } else if (command.includes('neurology')) {
+            this.setNavDestination('4');
+        } else if (command.includes('emergency')) {
+            this.setNavDestination('5');
+        } else if (command.includes('radiology')) {
+            this.setNavDestination('6');
         } else if (command.includes('list') || command.includes('rooms') || command.includes('departments')) {
             this.listRooms();
         } else if (command.includes('reset')) {
@@ -685,13 +710,13 @@ class MediCareApp {
     
     listRooms() {
         let message = 'Available departments: ';
-        message += 'Room One: Cardiology Ward. ';
-        message += 'Room Two: Orthopedics Ward. ';
-        message += 'Room Three: Pediatrics Ward. ';
-        message += 'Room Four: Neurology Ward. ';
-        message += 'Room Five: Emergency Department. ';
-        message += 'Room Six: Radiology Department. ';
-        message += 'Say the room number or department name you want to go to.';
+        message += 'Number One: Cardiology Ward. ';
+        message += 'Number Two: Orthopedics Ward. ';
+        message += 'Number Three: Pediatrics Ward. ';
+        message += 'Number Four: Neurology Ward. ';
+        message += 'Number Five: Emergency Department. ';
+        message += 'Number Six: Radiology Department. ';
+        message += 'Please say a number from one to six to navigate.';
         
         this.speak(message, true);
     }
@@ -897,6 +922,12 @@ class MediCareApp {
         
         const lowerText = text.toLowerCase();
         const isHospitalRelated = hospitalKeywords.some(keyword => lowerText.includes(keyword));
+        
+        if (!isHospitalRelated) {
+            this.speak('Invalid. This is not a hospital sign.');
+            document.querySelector('#reader-last-detection').textContent = 'Invalid text detected';
+            return;
+        }
         
         if (isHospitalRelated) {
             document.querySelector('#reader-text').textContent = text;
