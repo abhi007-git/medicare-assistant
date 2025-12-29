@@ -86,6 +86,17 @@ class MediCareApp {
             btn.addEventListener('click', () => this.navigateTo('home'));
         });
         
+        // Mobile voice activation button
+        const activateVoiceBtn = document.querySelector('#activate-voice-btn');
+        if (activateVoiceBtn) {
+            activateVoiceBtn.addEventListener('click', () => {
+                console.log('Manual voice activation triggered');
+                activateVoiceBtn.style.display = 'none';
+                this.startListening();
+                this.speak('Voice recognition activated. I am now listening.');
+            });
+        }
+        
         // Home screen buttons
         document.querySelector('.voice-form-btn')?.addEventListener('click', () => this.navigateTo('form'));
         document.querySelector('.queue-btn')?.addEventListener('click', () => this.navigateTo('queue'));
@@ -150,6 +161,11 @@ class MediCareApp {
             if (voiceStatus) {
                 voiceStatus.classList.add('listening');
             }
+            // Hide activation button once listening starts
+            const activateBtn = document.querySelector('#activate-voice-btn');
+            if (activateBtn) {
+                activateBtn.style.display = 'none';
+            }
         };
         
         this.recognition.onresult = (event) => {
@@ -168,6 +184,11 @@ class MediCareApp {
             if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
                 alert('Microphone access denied! Please allow microphone permission in browser settings.');
                 this.speak('Microphone access denied. Please allow microphone permission.');
+                // Show activation button if permission denied
+                const activateBtn = document.querySelector('#activate-voice-btn');
+                if (activateBtn) {
+                    activateBtn.style.display = 'flex';
+                }
             } else if (event.error === 'no-speech') {
                 console.log('No speech detected, continuing...');
             } else if (event.error === 'network') {
@@ -187,7 +208,17 @@ class MediCareApp {
             setTimeout(() => this.startListening(), 300);
         };
         
-        this.startListening();
+        // On mobile, show activation button instead of auto-starting
+        const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+        if (isMobile) {
+            console.log('Mobile detected - showing activation button');
+            const activateBtn = document.querySelector('#activate-voice-btn');
+            if (activateBtn) {
+                activateBtn.style.display = 'flex';
+            }
+        } else {
+            this.startListening();
+        }
     }
     
     startListening() {
