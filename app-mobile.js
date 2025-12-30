@@ -828,10 +828,10 @@ class MediCareApp {
         this.startQRScanner(); // Restart scanner
     }
     
-    startQRScanner() {
+    async startQRScanner() {
         // Stop existing scanner if any
         if (this.qrScanner && this.qrScannerActive) {
-            this.stopQRScanner();
+            await this.stopQRScanner();
         }
         
         try {
@@ -848,66 +848,91 @@ class MediCareApp {
                 return;
             }
             
+            // Request camera permission explicitly first (especially for mobile)
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: "environment" } 
+                });
+                // Stop the test stream immediately - we just wanted to get permission
+                stream.getTracks().forEach(track => track.stop());
+                console.log('Camera permission granted');
+            } catch (permErr) {
+                console.error('Camera permission denied:', permErr);
+                alert('Camera permission is required for QR scanning. Please allow camera access in your browser settings.');
+                this.speak('Camera permission denied. Please allow camera access.');
+                return;
+            }
+            
             console.log('Initializing QR scanner...');
             this.qrScanner = new Html5Qrcode("qr-reader");
             
             const config = {
                 fps: 10,
-                qrbox: { width: 250, height: 250 },
-                aspectRatio: 1.0
+                qrbox: 250,
+                aspectRatio: 1.0,
+                disableFlip: false
             };
             
-            // Request camera and start scanning
-            this.qrScanner.start(
-                { facingMode: "environment" }, // Use back camera
-                config,
-                (decodedText) => {
-                    // QR code successfully scanned
-                    console.log('QR Code detected:', decodedText);
-                    
-                    // Vibrate if available
-                    if (navigator.vibrate) {
-                        navigator.vibrate(200);
+            // Get available cameras
+            const devices = await Html5Qrcode.getCameras();
+            console.log('Available cameras:', devices);
+            
+            if (devices && devices.length > 0) {
+                // Use the last camera (usually back camera on mobile)
+                const cameraId = devices.length > 1 ? devices[devices.length - 1].id : devices[0].id;
+                
+                // Start scanning with specific camera
+                await this.qrScanner.start(
+                    cameraId,
+                    config,
+                    (decodedText) => {
+                        // QR code successfully scanned
+                        console.log('QR Code detected:', decodedText);
+                        
+                        // Vibrate if available
+                        if (navigator.vibrate) {
+                            navigator.vibrate(200);
+                        }
+                        
+                        // Check if QR contains room number (1-6)
+                        const roomMatch = decodedText.match(/room[:\s]*([1-6])|^([1-6])$/i);
+                        if (roomMatch) {
+                            const roomNum = roomMatch[1] || roomMatch[2];
+                            this.speak(`QR code scanned. Navigating to room ${roomNum}.`);
+                            this.setNavDestination(roomNum);
+                        } else {
+                            this.speak('Invalid QR code. Please scan a valid hospital room code.');
+                        }
+                    },
+                    (error) => {
+                        // QR scan error - silent, just keep scanning
                     }
-                    
-                    // Check if QR contains room number (1-6)
-                    const roomMatch = decodedText.match(/room[:\s]*([1-6])|^([1-6])$/i);
-                    if (roomMatch) {
-                        const roomNum = roomMatch[1] || roomMatch[2];
-                        this.speak(`QR code scanned. Navigating to room ${roomNum}.`);
-                        this.setNavDestination(roomNum);
-                    } else {
-                        this.speak('Invalid QR code. Please scan a valid hospital room code.');
-                    }
-                },
-                (error) => {
-                    // QR scan error - silent, just keep scanning
-                    // Don't log every frame error
-                }
-            ).then(() => {
+                );
+                
                 this.qrScannerActive = true;
                 console.log('QR Scanner started successfully');
                 this.speak('QR scanner ready. Point camera at room QR code.');
-            }).catch(err => {
-                console.error('QR Scanner start error:', err);
-                this.qrScannerActive = false;
-                this.speak('Unable to start QR scanner. Please check camera permissions.');
-            });
+            } else {
+                console.error('No cameras found');
+                this.speak('No camera found on this device.');
+            }
             
         } catch (error) {
             console.error('QR Scanner initialization error:', error);
-            this.speak('QR scanner initialization failed.');
+            this.qrScannerActive = false;
+            this.speak('Unable to start QR scanner. Error: ' + error.message);
         }
     }
     
-    stopQRScanner() {
+    async stopQRScanner() {
         if (this.qrScanner && this.qrScannerActive) {
-            this.qrScanner.stop().then(() => {
+            try {
+                await this.qrScanner.stop();
                 this.qrScannerActive = false;
                 console.log('QR Scanner stopped');
-            }).catch(err => {
+            } catch (err) {
                 console.error('QR Scanner stop error:', err);
-            });
+            }
         }
     }
     
