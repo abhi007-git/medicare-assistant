@@ -815,18 +815,33 @@ class MediCareApp {
         // Stop scanner temporarily to prevent continuous scanning
         await this.stopQRScanner();
         
+        console.log('Raw QR data:', qrData);
+        
+        // Try to parse JSON if QR contains JSON data
+        let qrId = qrData;
+        try {
+            const parsed = JSON.parse(qrData);
+            if (parsed.id) {
+                qrId = parsed.id;
+                console.log('Parsed QR ID:', qrId);
+            }
+        } catch (e) {
+            // Not JSON, use raw data
+            console.log('Not JSON, using raw data');
+        }
+        
         // Get the instruction for this QR code
-        const instruction = this.qrInstructions[qrData];
+        const instruction = this.qrInstructions[qrId];
         
         if (!instruction) {
             // Unknown QR code - just speak the data
-            this.speak(qrData, true);
-            document.querySelector('#nav-destination').textContent = qrData;
-            document.querySelector('#nav-instruction-text').textContent = qrData;
+            this.speak(qrId, true);
+            document.querySelector('#nav-destination').textContent = qrId;
+            document.querySelector('#nav-instruction-text').textContent = qrId;
         } else {
             // Speak the full navigation instruction
             this.speak(instruction, true);
-            document.querySelector('#nav-destination').textContent = qrData;
+            document.querySelector('#nav-destination').textContent = qrId;
             document.querySelector('#nav-instruction-text').textContent = instruction;
         }
         
