@@ -1188,6 +1188,7 @@ class MediCareApp {
     handleDetectedText(text) {
         // Only process if text actually exists
         if (!text || text.trim().length === 0) {
+            console.log('⚠️ No text detected');
             return; // Silent - no text detected
         }
         
@@ -1195,34 +1196,37 @@ class MediCareApp {
         text = text.trim().replace(/\s+/g, ' ');
         
         // Log detected text for debugging
-        console.log('📝 Detected text (cleaned):', text);
+        console.log('📝 RAW Detected text:', text);
         
         // If text is too short (less than 2 characters), likely noise
         if (text.length < 2) {
-            console.log('⚠️ Text too short, ignoring');
+            console.log('⚠️ Text too short (less than 2 chars), ignoring');
             return;
         }
+        
+        console.log('✅ Text is valid length:', text.length, 'characters');
         
         // Medical and hospital-related keywords (comprehensive list)
         const medicalKeywords = [
             // Departments
-            'radiology', 'cardiology', 'neurology', 'orthopedics', 'pediatrics',
-            'oncology', 'dermatology', 'gynecology', 'urology', 'ophthalmology',
-            'psychiatry', 'pathology', 'anesthesiology', 'surgery',
+            'radiology', 'cardiology', 'neurology', 'orthopedics', 'orthopedic', 'pediatrics', 'pediatric',
+            'oncology', 'dermatology', 'gynecology', 'gynaecology', 'urology', 'ophthalmology',
+            'psychiatry', 'pathology', 'anesthesiology', 'anesthesia', 'surgery', 'surgical',
+            'medicine', 'medical', 'cardio', 'neuro', 'ortho', 'gastro', 'pulmonary',
             // Common terms
-            'department', 'dept', 'ward', 'room', 'emergency', 'icu', 'opd',
-            'pharmacy', 'laboratory', 'lab', 'reception', 'registration',
-            'operation', 'theater', 'exit', 'entrance', 'waiting', 'consultation',
-            'doctor', 'nurse', 'patient', 'bed', 'floor', 'wing', 'unit',
-            'clinic', 'hospital', 'medical', 'care', 'center', 'diagnostic',
+            'department', 'dept', 'ward', 'room', 'emergency', 'icu', 'opd', 'ot',
+            'pharmacy', 'laboratory', 'lab', 'reception', 'registration', 'admit', 'discharge',
+            'operation', 'theatre', 'theater', 'exit', 'entrance', 'waiting', 'consultation',
+            'doctor', 'dr', 'nurse', 'patient', 'bed', 'floor', 'wing', 'unit', 'block',
+            'clinic', 'hospital', 'care', 'center', 'centre', 'diagnostic', 'scan', 'imaging',
             // Procedures & Equipment
-            'x-ray', 'xray', 'ct', 'mri', 'scan', 'ultrasound', 'ecg', 'ekg',
-            'blood', 'test', 'imaging', 'therapy', 'treatment',
-            // Directions
+            'x-ray', 'xray', 'ct', 'mri', 'ultrasound', 'ecg', 'ekg', 'echo',
+            'blood', 'test', 'therapy', 'treatment', 'vaccine', 'injection',
+            // Directions & Facilities
             'left', 'right', 'straight', 'turn', 'ahead', 'stairs', 'lift',
-            'elevator', 'parking', 'restroom', 'toilet', 'cafeteria',
-            // Partial matches
-            'ology', 'ics', 'tion', 'ment', 'ical'
+            'elevator', 'parking', 'restroom', 'toilet', 'washroom', 'cafeteria', 'canteen',
+            // Partial matches for medical terms
+            'ology', 'ological', 'ics', 'tion', 'ment', 'ical', 'ology'
         ];
         
         const lowerText = text.toLowerCase();
@@ -1230,23 +1234,17 @@ class MediCareApp {
         // Check if text contains any medical keyword
         const hasMedicalKeyword = medicalKeywords.some(keyword => lowerText.includes(keyword));
         
-        // Be more lenient - accept text if:
-        // 1. Contains medical keyword OR
-        // 2. Text is reasonably short (likely a sign) OR  
-        // 3. Contains numbers (room/floor numbers)
-        const hasNumbers = /\d/.test(text);
-        const isReasonableLength = text.length >= 2 && text.length <= 50;
-        
-        // Accept almost anything that looks like it could be a sign
-        const isValid = hasMedicalKeyword || (isReasonableLength && hasNumbers) || isReasonableLength;
-        
-        if (!isValid) {
-            console.log('❌ Text rejected:', text);
-            return;
+        if (hasMedicalKeyword) {
+            console.log('✅ MEDICAL KEYWORD FOUND!');
+        } else {
+            console.log('⚠️ No medical keyword found, but will still process');
         }
         
-        // Valid text detected - update UI
-        console.log('✅ Valid text detected:', text);
+        // ACCEPT ALL TEXT - if it's detected, speak it!
+        // User wants to hear everything that's detected
+        
+        // Update UI
+        console.log('✅ Processing text:', text);
         document.querySelector('#reader-text').textContent = text;
         document.querySelector('#reader-last-detection').textContent = text;
         
