@@ -5,7 +5,7 @@
 const API_CONFIG = {
     // OCR SERVICE CONFIGURATION
     // Choose one: 'tesseract' (free, client-side), 'google', 'azure', 'ocrspace'
-    OCR_SERVICE: 'tesseract', // Default: Tesseract.js (no API key needed)
+    OCR_SERVICE: 'azure', // Using Azure Computer Vision API
     
     // ==========================================================================
     // OPTION 1: TESSERACT.JS (Client-side, FREE, NO API KEY NEEDED)
@@ -36,14 +36,16 @@ const API_CONFIG = {
     },
     
     // ==========================================================================
-    // OPTION 4: MICROSOFT AZURE COMPUTER VISION
+    // OPTION 4: MICROSOFT AZURE COMPUTER VISION (ACTIVE)
     // ==========================================================================
     // Get API key from: https://portal.azure.com/
-    // Create "Computer Vision" resource
+    // 1. Create "Computer Vision" resource
+    // 2. Go to "Keys and Endpoint" section
+    // 3. Copy Key 1 and Endpoint URL
     // Free tier: 5,000 transactions/month
     AZURE_VISION: {
-        API_KEY: '', // ADD YOUR API KEY HERE
-        ENDPOINT: '', // ADD YOUR ENDPOINT like: 'https://yourresource.cognitiveservices.azure.com/'
+        API_KEY: 'YOUR_AZURE_KEY_HERE', // Example: '1234567890abcdef1234567890abcdef'
+        ENDPOINT: 'https://YOUR_RESOURCE_NAME.cognitiveservices.azure.com/', // Keep the trailing slash
         URL_SUFFIX: '/vision/v3.2/ocr'
     }
 };

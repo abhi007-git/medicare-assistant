@@ -1148,16 +1148,97 @@ class MediCareApp {
             
             document.querySelector('#voice-speed').value = this.voiceSpeed;
             document.querySelector('#voice-volume').value = this.voiceVolume;
+            
+            // Load Azure API settings
+            if (settings.azureApiKey) {
+                document.querySelector('#azure-api-key').value = settings.azureApiKey;
+                // Update API_CONFIG if user provided settings
+                if (window.API_CONFIG) {
+                    window.API_CONFIG.AZURE_VISION.API_KEY = settings.azureApiKey;
+                }
+            }
+            if (settings.azureEndpoint) {
+                document.querySelector('#azure-endpoint').value = settings.azureEndpoint;
+                if (window.API_CONFIG) {
+                    window.API_CONFIG.AZURE_VISION.ENDPOINT = settings.azureEndpoint;
+                }
+            }
         }
     }
     
     saveSettings() {
+        // Get Azure API settings from input fields
+        const azureApiKey = document.querySelector('#azure-api-key').value.trim();
+        const azureEndpoint = document.querySelector('#azure-endpoint').value.trim();
+        
         const settings = {
             voiceSpeed: this.voiceSpeed,
-            voiceVolume: this.voiceVolume
+            voiceVolume: this.voiceVolume,
+            azureApiKey: azureApiKey,
+            azureEndpoint: azureEndpoint
         };
+        
+        // Update API_CONFIG in real-time
+        if (window.API_CONFIG && azureApiKey && azureEndpoint) {
+            window.API_CONFIG.AZURE_VISION.API_KEY = azureApiKey;
+            window.API_CONFIG.AZURE_VISION.ENDPOINT = azureEndpoint;
+            window.API_CONFIG.OCR_SERVICE = 'azure';
+        }
+        
         localStorage.setItem('mediCareSettings', JSON.stringify(settings));
-        this.speak('Settings saved.');
+        this.speak('Settings saved successfully.');
+    }
+    
+    async testAzureConnection() {
+        const apiKey = document.querySelector('#azure-api-key').value.trim();
+        const endpoint = document.querySelector('#azure-endpoint').value.trim();
+        
+        if (!apiKey || !endpoint) {
+            alert('⚠️ Please enter both API Key and Endpoint URL');
+            this.speak('Please enter both API key and endpoint.');
+            return;
+        }
+        
+        this.speak('Testing Azure connection...');
+        
+        try {
+            // Test with a simple image
+            const testCanvas = document.createElement('canvas');
+            testCanvas.width = 100;
+            testCanvas.height = 100;
+            const ctx = testCanvas.getContext('2d');
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, 100, 100);
+            ctx.fillStyle = 'black';
+            ctx.font = '20px Arial';
+            ctx.fillText('TEST', 20, 50);
+            
+            const blob = await new Promise(resolve => testCanvas.toBlob(resolve, 'image/jpeg'));
+            
+            const response = await fetch(`${endpoint}/vision/v3.2/ocr`, {
+                method: 'POST',
+                headers: {
+                    'Ocp-Apim-Subscription-Key': apiKey,
+                    'Content-Type': 'application/octet-stream'
+                },
+                body: blob
+            });
+            
+            if (response.ok) {
+                alert('✅ Success! Azure API connection is working.\n\nYour Sign Reader is ready to use!');
+                this.speak('Azure connection successful! Sign reader is ready.');
+                this.saveSettings(); // Auto-save on successful test
+            } else {
+                const error = await response.text();
+                alert('❌ Connection failed!\n\nError: ' + response.status + '\n\nPlease check your API key and endpoint.');
+                this.speak('Connection failed. Please check your credentials.');
+                console.error('Azure test failed:', error);
+            }
+        } catch (error) {
+            alert('❌ Connection error!\n\n' + error.message + '\n\nPlease check your endpoint URL format.');
+            this.speak('Connection error. Please check your endpoint format.');
+            console.error('Azure test error:', error);
+        }
     }
 }
 

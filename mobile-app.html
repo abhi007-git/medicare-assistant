@@ -466,6 +466,50 @@
                     </div>
                 </div>
                 
+                <!-- Azure Vision API Settings -->
+                <div class="mb-6">
+                    <h3 class="font-semibold mb-3 text-text-main flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary">cloud</span>
+                        Azure Vision API (Sign Reader)
+                    </h3>
+                    <div class="space-y-3">
+                        <div class="p-4 bg-gradient-to-r from-blue-600/10 to-blue-500/10 rounded-xl border border-blue-500/20">
+                            <p class="text-xs text-text-muted mb-3">
+                                Configure Azure Computer Vision API for Sign Reader OCR functionality
+                            </p>
+                            
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-sm text-text-muted mb-2">API Key *</label>
+                                    <input type="password" id="azure-api-key" placeholder="Enter your Azure API key" 
+                                           class="w-full px-3 py-2 bg-background border border-border rounded-lg text-text-main focus:outline-none focus:border-primary">
+                                    <p class="text-xs text-text-muted mt-1">From Azure Portal → Computer Vision → Keys and Endpoint</p>
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm text-text-muted mb-2">Endpoint URL *</label>
+                                    <input type="text" id="azure-endpoint" placeholder="https://yourresource.cognitiveservices.azure.com/" 
+                                           class="w-full px-3 py-2 bg-background border border-border rounded-lg text-text-main focus:outline-none focus:border-primary">
+                                    <p class="text-xs text-text-muted mt-1">Your resource endpoint with trailing slash</p>
+                                </div>
+                                
+                                <div class="flex items-start gap-2 bg-blue-900/20 p-3 rounded-lg">
+                                    <span class="material-symbols-outlined text-blue-400 text-sm mt-0.5">info</span>
+                                    <p class="text-xs text-text-muted">
+                                        Get free API: <a href="https://portal.azure.com/" target="_blank" class="text-primary underline">Azure Portal</a> → Create Computer Vision (Free tier: 5,000 calls/month)
+                                    </p>
+                                </div>
+                                
+                                <button onclick="window.mediCareApp.testAzureConnection()" 
+                                        class="w-full bg-primary hover:bg-blue-600 text-white py-2.5 rounded-lg font-medium transition-colors flex items-center justify-center gap-2">
+                                    <span class="material-symbols-outlined">wifi_tethering</span>
+                                    Test Connection
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
                 <!-- Firebase Config -->
                 <div class="mb-6">
                     <h3 class="font-semibold mb-3 text-text-main">Firebase Configuration</h3>
