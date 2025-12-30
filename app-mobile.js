@@ -1100,30 +1100,63 @@ class MediCareApp {
             return; // Silent - no text detected
         }
         
-        // Filter: Only announce hospital-related text
+        // Clean up the text
+        text = text.trim();
+        
+        // Log detected text for debugging
+        console.log('Detected text:', text);
+        
+        // Expanded hospital-related keywords (more flexible matching)
         const hospitalKeywords = [
-            'department', 'ward', 'room', 'emergency', 'radiology', 'cardiology',
-            'orthopedics', 'pediatrics', 'neurology', 'pharmacy', 'laboratory',
-            'reception', 'registration', 'icu', 'operation', 'theater', 'exit',
-            'entrance', 'waiting', 'consultation', 'vaccination', 'blood bank',
-            'x-ray', 'ct scan', 'mri', 'ambulance', 'cafeteria', 'restroom',
-            'elevator', 'stairs', 'parking', 'hospital', 'clinic', 'medical'
+            'department', 'dept', 'ward', 'room', 'emergency', 'radiology', 'cardiology',
+            'orthopedics', 'ortho', 'pediatrics', 'neurology', 'pharmacy', 'laboratory', 'lab',
+            'reception', 'registration', 'icu', 'operation', 'theater', 'exit', 'opd',
+            'entrance', 'waiting', 'consultation', 'vaccination', 'blood', 'bank',
+            'x-ray', 'xray', 'ct', 'scan', 'mri', 'ambulance', 'cafeteria', 'restroom',
+            'elevator', 'lift', 'stairs', 'parking', 'hospital', 'clinic', 'medical',
+            'doctor', 'nurse', 'patient', 'bed', 'floor', 'wing', 'unit', 'center',
+            'surgery', 'outpatient', 'inpatient', 'maternity', 'neonatal', 'intensive',
+            'care', 'diagnostic', 'imaging', 'therapy', 'rehabilitation', 'casualty',
+            'trauma', 'admin', 'office', 'info', 'information', 'help', 'desk',
+            'general', 'special', 'medicine', 'surgical', 'oncology', 'dermatology',
+            'gynecology', 'urology', 'ophthalmology', 'ent', 'dental', 'physiotherapy',
+            // Numbers and letters (for room numbers like "Room 101", "Ward A")
+            '1', '2', '3', '4', '5', '6', '7', '8', '9', '0',
+            'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'
         ];
         
         const lowerText = text.toLowerCase();
-        const isHospitalRelated = hospitalKeywords.some(keyword => lowerText.includes(keyword));
         
-        if (!isHospitalRelated) {
-            // Text detected but not hospital-related
+        // More flexible validation:
+        // 1. Check if text contains any hospital keyword
+        // 2. OR if text is short (likely a sign like "ICU", "OPD", etc.)
+        // 3. OR if text contains numbers (room numbers, floor numbers)
+        const hasKeyword = hospitalKeywords.some(keyword => lowerText.includes(keyword));
+        const isShortSign = text.length <= 30; // Short signs are likely hospital signs
+        const hasNumbers = /\d/.test(text); // Contains numbers
+        
+        const isValid = hasKeyword || (isShortSign && hasNumbers) || isShortSign;
+        
+        if (!isValid) {
+            // Only reject if text is clearly not hospital-related
+            console.log('Rejected as non-hospital text:', text);
             this.speak('Invalid. This is not a hospital sign.');
             document.querySelector('#reader-last-detection').textContent = 'Invalid: Non-hospital text';
             return;
         }
         
-        // Valid hospital text - speak it exactly as shown
+        // Valid text - speak it with voice
+        console.log('Valid hospital text detected:', text);
         document.querySelector('#reader-text').textContent = text;
         document.querySelector('#reader-last-detection').textContent = text;
-        this.speak(text, true);
+        
+        // Speak the text clearly
+        this.speak(text, true); // Force immediate speech
+        
+        // Also vibrate for feedback
+        if (navigator.vibrate) {
+            navigator.vibrate([200, 100, 200]);
+        }
     }
     
     speakLastDetection() {
