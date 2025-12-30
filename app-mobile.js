@@ -1013,16 +1013,15 @@ class MediCareApp {
         
         // If in cooldown, wait and try again
         if (this.scanCooldown) {
-            console.log('⏳ Scan cooldown active, waiting...');
-            setTimeout(() => this.continuousOCRScan(), 500);
+            setTimeout(() => this.continuousOCRScan(), 100);
             return;
         }
         
-        // Perform scan immediately
+        // Perform scan immediately - no delay!
         await this.performOCR();
         
-        // Schedule next scan (quick check if still active)
-        setTimeout(() => this.continuousOCRScan(), 500);
+        // Immediately start next scan (no delay between scans)
+        this.continuousOCRScan();
     }
     
     async performOCR() {
