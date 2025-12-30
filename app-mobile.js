@@ -30,6 +30,8 @@ class MediCareApp {
         this.navCurrentStep = 0;
         this.navSteps = [];
         this.hospitalRooms = {};
+        this.qrScanner = null;
+        this.qrScannerActive = false;
         
         // Reader state
         this.readerActive = false;
@@ -377,6 +379,11 @@ class MediCareApp {
     // ========================================================================
     
     navigateTo(screenName) {
+        // Stop QR scanner when leaving navigation screen
+        if (this.currentScreen === 'navigation' && screenName !== 'navigation') {
+            this.stopQRScanner();
+        }
+        
         // Hide all screens
         document.querySelectorAll('.screen').forEach(screen => {
             screen.classList.remove('active');
@@ -716,6 +723,7 @@ class MediCareApp {
         };
         
         this.listRooms();
+        this.startQRScanner();
     }
     
     listRooms() {
@@ -815,8 +823,67 @@ class MediCareApp {
         this.navCurrentStep = 0;
         this.navSteps = [];
         document.querySelector('#nav-destination').textContent = 'Not Set';
-        document.querySelector('#nav-instruction-text').textContent = 'Say a room number to set destination';
+        document.querySelector('#nav-instruction-text').textContent = 'Scan QR code or say room number';
         this.speak('Navigation reset.');
+        this.startQRScanner(); // Restart scanner
+    }
+    
+    startQRScanner() {
+        // Stop existing scanner if any
+        if (this.qrScanner && this.qrScannerActive) {
+            this.stopQRScanner();
+        }
+        
+        try {
+            const qrReader = document.querySelector('#qr-reader');
+            if (!qrReader) return;
+            
+            this.qrScanner = new Html5Qrcode("qr-reader");
+            this.qrScannerActive = true;
+            
+            this.qrScanner.start(
+                { facingMode: "environment" }, // Use back camera
+                {
+                    fps: 10,
+                    qrbox: { width: 250, height: 250 }
+                },
+                (decodedText) => {
+                    // QR code successfully scanned
+                    console.log('QR Code detected:', decodedText);
+                    
+                    // Check if QR contains room number (1-6)
+                    const roomMatch = decodedText.match(/room[:\s]*([1-6])|^([1-6])$/i);
+                    if (roomMatch) {
+                        const roomNum = roomMatch[1] || roomMatch[2];
+                        this.speak(`QR code scanned. Navigating to room ${roomNum}.`);
+                        this.setNavDestination(roomNum);
+                    } else {
+                        this.speak('Invalid QR code. Please scan a valid hospital room code.');
+                    }
+                },
+                (error) => {
+                    // QR scan error - silent, just keep scanning
+                    // console.log('Scanning...', error);
+                }
+            ).catch(err => {
+                console.error('QR Scanner start error:', err);
+                this.qrScannerActive = false;
+            });
+            
+        } catch (error) {
+            console.error('QR Scanner initialization error:', error);
+        }
+    }
+    
+    stopQRScanner() {
+        if (this.qrScanner && this.qrScannerActive) {
+            this.qrScanner.stop().then(() => {
+                this.qrScannerActive = false;
+                console.log('QR Scanner stopped');
+            }).catch(err => {
+                console.error('QR Scanner stop error:', err);
+            });
+        }
     }
     
     // ========================================================================
