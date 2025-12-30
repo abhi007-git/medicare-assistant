@@ -684,48 +684,18 @@ class MediCareApp {
     }
     
     initNavigation() {
-        // QR code spoken outputs from qr.html
-        this.qrNodeMap = {
-            "QR_START": {
-                name: "Entrance",
-                spoken: "You are at the hospital entrance."
-            },
-            "QR_MAIN_1": {
-                name: "Main Corridor 1",
-                spoken: "You are at Main Corridor One."
-            },
-            "QR_JUNCTION_A": {
-                name: "Junction A",
-                spoken: "You are at Junction A."
-            },
-            "QR_ROOM_1": {
-                name: "Room 1 - Cardiology",
-                spoken: "You have arrived at Room One, Cardiology department."
-            },
-            "QR_ROOM_2": {
-                name: "Room 2 - Orthopedics",
-                spoken: "You have arrived at Room Two, Orthopedics department."
-            },
-            "QR_JUNCTION_B": {
-                name: "Junction B",
-                spoken: "You are at Junction B."
-            },
-            "QR_ROOM_3": {
-                name: "Room 3 - Pediatrics",
-                spoken: "You have arrived at Room Three, Pediatrics department."
-            },
-            "QR_ROOM_4": {
-                name: "Room 4 - Neurology",
-                spoken: "You have arrived at Room Four, Neurology department."
-            },
-            "QR_MAIN_2": {
-                name: "Main Corridor 2",
-                spoken: "You are at Main Corridor Two."
-            },
-            "QR_ROOM_5": {
-                name: "Room 5 - Emergency",
-                spoken: "You have arrived at Room Five, Emergency department."
-            }
+        // QR code navigation instructions from qr.html
+        this.qrInstructions = {
+            "QR_START": "You are at the hospital entrance. Go straight for 10 meters to reach Main Corridor One.",
+            "QR_MAIN_1": "You are at Main Corridor One. Continue straight for 8 meters to reach Junction A.",
+            "QR_JUNCTION_A": "You are at Junction A. Turn left for Room One Cardiology, turn right for Room Two Orthopedics, or go straight to reach Junction B.",
+            "QR_JUNCTION_B": "You are at Junction B. Turn left for Room Three Pediatrics, turn right for Room Four Neurology, or continue straight for Main Corridor Two.",
+            "QR_MAIN_2": "You are at Main Corridor Two. Go straight for 5 meters to reach Room Five, Emergency.",
+            "QR_ROOM_1": "You have arrived at Room One, Cardiology department.",
+            "QR_ROOM_2": "You have arrived at Room Two, Orthopedics department.",
+            "QR_ROOM_3": "You have arrived at Room Three, Pediatrics department.",
+            "QR_ROOM_4": "You have arrived at Room Four, Neurology department.",
+            "QR_ROOM_5": "You have arrived at Room Five, Emergency department."
         };
         
         this.speak('Navigation section. Please scan a QR code.');
@@ -841,22 +811,32 @@ class MediCareApp {
         }
     }
     
-    handleQRCode(qrData) {
-        // Check if it's a valid hospital QR code
-        if (!this.qrNodeMap[qrData]) {
-            // If not in map, just speak the QR data as-is
+    async handleQRCode(qrData) {
+        // Stop scanner temporarily to prevent continuous scanning
+        await this.stopQRScanner();
+        
+        // Get the instruction for this QR code
+        const instruction = this.qrInstructions[qrData];
+        
+        if (!instruction) {
+            // Unknown QR code - just speak the data
             this.speak(qrData, true);
             document.querySelector('#nav-destination').textContent = qrData;
             document.querySelector('#nav-instruction-text').textContent = qrData;
-            return;
+        } else {
+            // Speak the full navigation instruction
+            this.speak(instruction, true);
+            document.querySelector('#nav-destination').textContent = qrData;
+            document.querySelector('#nav-instruction-text').textContent = instruction;
         }
         
-        const node = this.qrNodeMap[qrData];
-        
-        // Speak the specific message for this QR code
-        this.speak(node.spoken, true);
-        document.querySelector('#nav-destination').textContent = node.name;
-        document.querySelector('#nav-instruction-text').textContent = node.spoken;
+        // Wait 5 seconds before allowing next scan
+        setTimeout(() => {
+            if (this.currentScreen === 'navigation') {
+                this.speak('Ready for next scan.');
+                this.startQRScanner();
+            }
+        }, 5000);
     }
     
     // ========================================================================
