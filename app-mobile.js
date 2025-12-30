@@ -39,6 +39,7 @@ class MediCareApp {
         // Reader state
         this.readerActive = false;
         this.readerStream = null;
+        this.lastMedicalTerms = ''; // Store last detected medical terms for repeat command
         
         this.init();
     }
@@ -1005,14 +1006,14 @@ class MediCareApp {
         // Run first scan immediately
         this.performOCR();
         
-        // Then perform OCR every 1 second for fast, real-time detection
+        // Then perform OCR every 7 seconds (user requested delay)
         this.ocrInterval = setInterval(async () => {
             if (this.readerActive) {
                 await this.performOCR();
             } else {
                 clearInterval(this.ocrInterval);
             }
-        }, 1000);
+        }, 7000);
     }
     
     async performOCR() {
@@ -1380,6 +1381,9 @@ class MediCareApp {
         const termsToSpeak = foundTerms.join(', ');
         console.log('🎯 Terms to speak:', termsToSpeak);
         
+        // Store for repeat command
+        this.lastMedicalTerms = termsToSpeak;
+        
         console.log('✅✅✅ MEDICAL TERMS FOUND:', termsToSpeak);
         console.log('🔊🔊🔊 WILL SPEAK NOW:', termsToSpeak);
         
@@ -1464,11 +1468,12 @@ class MediCareApp {
     }
     
     speakLastDetection() {
-        const text = document.querySelector('#reader-text').textContent;
-        if (text && text !== 'Point camera at signs or text') {
-            this.speak(text, true);
+        // Speak only the medical terms, not the full detected text
+        if (this.lastMedicalTerms && this.lastMedicalTerms.length > 0) {
+            console.log('🔁 Repeating medical terms:', this.lastMedicalTerms);
+            this.speakMedicalTerm(this.lastMedicalTerms);
         } else {
-            this.speak('No text detected yet.');
+            this.speak('No medical terms detected yet. Point camera at medical signs.');
         }
     }
     
