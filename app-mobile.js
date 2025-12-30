@@ -117,7 +117,6 @@ class MediCareApp {
         document.querySelector('#queue-refresh-btn')?.addEventListener('click', () => this.refreshQueue());
         
         // Navigation buttons
-        document.querySelector('#nav-set-destination-btn')?.addEventListener('click', () => this.listRooms());
         document.querySelector('#nav-reset-btn')?.addEventListener('click', () => this.resetNavigation());
         
         // Reader buttons
@@ -304,7 +303,6 @@ class MediCareApp {
         
         if (command.includes('navigate') || command.includes('navigation')) {
             this.navigateTo('navigation');
-            setTimeout(() => this.listRooms(), 500);
             return;
         }
         
@@ -679,193 +677,23 @@ class MediCareApp {
     // ========================================================================
     
     handleNavigationCommand(command) {
-        // Check for direct number input (1-5)
-        const numberMatch = command.match(/\b(one|two|three|four|five|1|2|3|4|5)\b/);
-        if (numberMatch) {
-            const roomNumbers = { 
-                'one': '1', 'two': '2', 'three': '3', 'four': '4', 'five': '5',
-                '1': '1', '2': '2', '3': '3', '4': '4', '5': '5'
-            };
-            const room = roomNumbers[numberMatch[1].toLowerCase()];
-            if (room) {
-                this.setNavDestination(room);
-                return;
-            }
-        }
-        
-        // Check for department names
-        if (command.includes('cardiology')) {
-            this.setNavDestination('1');
-        } else if (command.includes('orthopedics')) {
-            this.setNavDestination('2');
-        } else if (command.includes('pediatrics')) {
-            this.setNavDestination('3');
-        } else if (command.includes('neurology')) {
-            this.setNavDestination('4');
-        } else if (command.includes('emergency')) {
-            this.setNavDestination('5');
-        } else if (command.includes('list') || command.includes('rooms') || command.includes('departments')) {
-            this.listRooms();
-        } else if (command.includes('reset')) {
+        // Only reset command for navigation
+        if (command.includes('reset')) {
             this.resetNavigation();
         }
     }
     
     initNavigation() {
-        // Define hospital rooms for voice commands
-        this.hospitalRooms = {
-            '1': { name: 'Cardiology', qr: 'QR_ROOM_1' },
-            '2': { name: 'Orthopedics', qr: 'QR_ROOM_2' },
-            '3': { name: 'Pediatrics', qr: 'QR_ROOM_3' },
-            '4': { name: 'Neurology', qr: 'QR_ROOM_4' },
-            '5': { name: 'Emergency', qr: 'QR_ROOM_5' }
-        };
-        
-        // QR Node map with navigation data
-        this.qrNodeMap = {
-            "QR_START": {
-                name: "Entrance",
-                next: ["QR_MAIN_1"]
-            },
-            "QR_MAIN_1": {
-                name: "Main Corridor 1",
-                next: ["QR_JUNCTION_A"]
-            },
-            "QR_JUNCTION_A": {
-                name: "Junction A",
-                next: ["QR_ROOM_1", "QR_ROOM_2", "QR_JUNCTION_B"]
-            },
-            "QR_JUNCTION_B": {
-                name: "Junction B",
-                next: ["QR_ROOM_3", "QR_ROOM_4", "QR_MAIN_2"]
-            },
-            "QR_MAIN_2": {
-                name: "Main Corridor 2",
-                next: ["QR_ROOM_5"]
-            },
-            "QR_ROOM_1": {
-                name: "Room 1 - Cardiology",
-                next: []
-            },
-            "QR_ROOM_2": {
-                name: "Room 2 - Orthopedics",
-                next: []
-            },
-            "QR_ROOM_3": {
-                name: "Room 3 - Pediatrics",
-                next: []
-            },
-            "QR_ROOM_4": {
-                name: "Room 4 - Neurology",
-                next: []
-            },
-            "QR_ROOM_5": {
-                name: "Room 5 - Emergency",
-                next: []
-            }
-        };
-        
-        this.listRooms();
+        this.speak('Navigation section. Please scan a QR code.');
         this.startQRScanner();
     }
     
-    listRooms() {
-        let message = 'Available departments: ';
-        message += 'Number One: Cardiology. ';
-        message += 'Number Two: Orthopedics. ';
-        message += 'Number Three: Pediatrics. ';
-        message += 'Number Four: Neurology. ';
-        message += 'Number Five: Emergency. ';
-        message += 'Please say a number from one to five to set your destination.';
-        
-        this.speak(message, true);
-    }
-    
-    setNavDestination(roomNum) {
-        if (!this.hospitalRooms[roomNum]) {
-            this.speak('Invalid room. Please say a room number from one to five.');
-            return;
-        }
-        
-        const room = this.hospitalRooms[roomNum];
-        this.navDestination = room.qr;
-        
-        document.querySelector('#nav-destination').textContent = room.name;
-        
-        const msg = `Destination set to ${room.name}. Please scan QR codes along the path for turn-by-turn directions.`;
-        this.speak(msg, true);
-        document.querySelector('#nav-instruction-text').textContent = 'Scan QR codes for directions';
-    }
-    
-    getNavigationSteps(roomNum) {
-        const steps = {
-            '1': [
-                'Go to elevator. Take elevator to 2nd floor.',
-                'Exit elevator, turn left.',
-                'Walk straight for 20 meters.',
-                'You have arrived at Cardiology Ward.'
-            ],
-            '2': [
-                'Go to elevator. Take elevator to 2nd floor.',
-                'Exit elevator, turn right.',
-                'Walk straight for 20 meters.',
-                'You have arrived at Orthopedics Ward.'
-            ],
-            '3': [
-                'Go to elevator. Take elevator to 3rd floor.',
-                'Exit elevator, turn left.',
-                'Walk straight for 15 meters.',
-                'You have arrived at Pediatrics Ward.'
-            ],
-            '4': [
-                'Go to elevator. Take elevator to 3rd floor.',
-                'Exit elevator, turn right.',
-                'Walk straight for 15 meters.',
-                'You have arrived at Neurology Ward.'
-            ],
-            '5': [
-                'From entrance, turn right.',
-                'Walk straight for 10 meters.',
-                'You have arrived at Emergency Department.'
-            ],
-            '6': [
-                'Go to elevator. Take elevator to 1st floor.',
-                'Exit elevator, go straight.',
-                'Walk for 12 meters.',
-                'You have arrived at Radiology Department.'
-            ]
-        };
-        
-        return steps[roomNum] || ['Navigation not available.'];
-    }
-    
-    processQRNavigation(qrData) {
-        if (!this.navDestination) {
-            this.speak('Please set a destination first. Say the room number you want to visit.');
-            return;
-        }
-        
-        // Simulate QR code scanning progress
-        if (this.navCurrentStep < this.navSteps.length - 1) {
-            this.navCurrentStep++;
-            const instruction = this.navSteps[this.navCurrentStep];
-            document.querySelector('#nav-instruction-text').textContent = instruction;
-            this.speak(instruction, true);
-        } else {
-            this.speak('You have reached your destination.', true);
-            this.navDestination = null;
-        }
-    }
-    
     resetNavigation() {
-        this.navDestination = null;
-        this.navCurrentStep = 0;
-        this.navSteps = [];
         this.currentLocation = null;
-        document.querySelector('#nav-destination').textContent = 'Not Set';
-        document.querySelector('#nav-instruction-text').textContent = 'Scan QR code or say room number';
-        this.speak('Navigation reset.');
-        this.startQRScanner(); // Restart scanner
+        document.querySelector('#nav-destination').textContent = 'Ready to Scan';
+        document.querySelector('#nav-instruction-text').textContent = 'Please scan a QR code';
+        this.speak('Please scan a QR code.');
+        this.startQRScanner();
     }
     
     async startQRScanner() {
@@ -970,67 +798,10 @@ class MediCareApp {
     }
     
     handleQRCode(qrData) {
-        // Check if it's a valid hospital QR code
-        if (!this.qrNodeMap[qrData]) {
-            this.speak('Invalid QR code. Please scan a hospital location QR code.');
-            return;
-        }
-        
-        this.currentLocation = qrData;
-        const node = this.qrNodeMap[qrData];
-        
-        // If no destination set, just announce current location
-        if (!this.navDestination) {
-            this.speak(`You are at ${node.name}. Please set a destination first.`);
-            document.querySelector('#nav-instruction-text').textContent = `At: ${node.name}`;
-            return;
-        }
-        
-        // Check if we've reached the destination
-        if (qrData === this.navDestination) {
-            this.speak(`You have arrived at ${node.name}.`);
-            document.querySelector('#nav-instruction-text').textContent = `Arrived: ${node.name}`;
-            return;
-        }
-        
-        // Give navigation instruction
-        const instruction = this.getNavigationInstruction(qrData, this.navDestination);
-        this.speak(instruction, true);
-        document.querySelector('#nav-instruction-text').textContent = instruction;
-    }
-    
-    getNavigationInstruction(currentQR, destQR) {
-        const instructions = {
-            "QR_START": {
-                "default": "Go straight for 10 meters to reach Main Corridor One."
-            },
-            "QR_MAIN_1": {
-                "default": "Continue straight for 8 meters to reach Junction A."
-            },
-            "QR_JUNCTION_A": {
-                "QR_ROOM_1": "Turn left and walk 5 meters to reach Room One, Cardiology.",
-                "QR_ROOM_2": "Turn right and walk 5 meters to reach Room Two, Orthopedics.",
-                "QR_ROOM_3": "Go straight for 10 meters to reach Junction B.",
-                "QR_ROOM_4": "Go straight for 10 meters to reach Junction B.",
-                "QR_ROOM_5": "Go straight for 10 meters to reach Junction B."
-            },
-            "QR_JUNCTION_B": {
-                "QR_ROOM_3": "Turn left and walk 5 meters to reach Room Three, Pediatrics.",
-                "QR_ROOM_4": "Turn right and walk 5 meters to reach Room Four, Neurology.",
-                "QR_ROOM_5": "Continue straight for 8 meters to reach Main Corridor Two."
-            },
-            "QR_MAIN_2": {
-                "QR_ROOM_5": "Go straight for 5 meters to reach Room Five, Emergency."
-            }
-        };
-        
-        if (instructions[currentQR] && instructions[currentQR][destQR]) {
-            return instructions[currentQR][destQR];
-        } else if (instructions[currentQR] && instructions[currentQR]["default"]) {
-            return instructions[currentQR]["default"];
-        } else {
-            return "Continue following the path.";
-        }
+        // Simply speak out the QR code data
+        this.speak(qrData, true);
+        document.querySelector('#nav-destination').textContent = qrData;
+        document.querySelector('#nav-instruction-text').textContent = qrData;
     }
     
     // ========================================================================
