@@ -32,6 +32,7 @@ class MediCareApp {
         this.hospitalRooms = {};
         this.qrScanner = null;
         this.qrScannerActive = false;
+        this.qrScanCooldown = false;
         this.currentLocation = null;
         this.qrNodeMap = {};
         
@@ -812,8 +813,14 @@ class MediCareApp {
     }
     
     async handleQRCode(qrData) {
-        // Stop scanner temporarily to prevent continuous scanning
+        // Prevent processing during cooldown
+        if (this.qrScanCooldown) {
+            return;
+        }
+        
+        // Stop scanner immediately to prevent continuous scanning
         await this.stopQRScanner();
+        this.qrScanCooldown = true;
         
         console.log('Raw QR data:', qrData);
         
@@ -828,6 +835,11 @@ class MediCareApp {
         } catch (e) {
             // Not JSON, use raw data
             console.log('Not JSON, using raw data');
+        }
+        
+        // Vibrate feedback
+        if (navigator.vibrate) {
+            navigator.vibrate(200);
         }
         
         // Get the instruction for this QR code
@@ -845,13 +857,14 @@ class MediCareApp {
             document.querySelector('#nav-instruction-text').textContent = instruction;
         }
         
-        // Wait 5 seconds before allowing next scan
+        // Wait 3 seconds before allowing next scan
         setTimeout(() => {
-            if (this.currentScreen === 'navigation') {
+            this.qrScanCooldown = false;
+            if (this.currentScreen === 'navigation' && !this.qrScannerActive) {
                 this.speak('Ready for next scan.');
                 this.startQRScanner();
             }
-        }, 5000);
+        }, 3000);
     }
     
     // ========================================================================

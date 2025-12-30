@@ -63,6 +63,10 @@
 <body>
     <h1>QR Scanner Test for Hospital Navigation</h1>
     
+    <div style="background: #fff3cd; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+        <strong>⚠️ Important:</strong> Make sure you're using the GitHub Pages URL (https://...) and have granted camera permission.
+    </div>
+    
     <button class="btn" id="start-btn" onclick="startScanner()">Start Scanner</button>
     <button class="btn red" id="stop-btn" onclick="stopScanner()" disabled>Stop Scanner</button>
     
@@ -81,6 +85,8 @@
     <script>
         let qrScanner = null;
         let isScanning = false;
+        let lastScannedQR = null;
+        let scanCooldown = false;
         
         const qrInstructions = {
             "QR_START": "You are at the hospital entrance. Go straight for 10 meters to reach Main Corridor One.",
@@ -116,14 +122,7 @@
             try {
                 log('Requesting camera permission...');
                 
-                // Request camera permission first
-                const stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: "environment" } 
-                });
-                stream.getTracks().forEach(track => track.stop());
-                log('Camera permission granted ✓');
-                
-                // Initialize QR scanner
+                // Initialize QR scanner first
                 qrScanner = new Html5Qrcode("qr-reader");
                 log('QR Scanner initialized ✓');
                 
@@ -131,42 +130,112 @@
                 const devices = await Html5Qrcode.getCameras();
                 log(`Found ${devices.length} camera(s)`);
                 devices.forEach((device, index) => {
-                    log(`  Camera ${index + 1}: ${device.label}`);
+                    log(`  Camera ${index + 1}: ${device.label || device.id}`);
                 });
                 
                 if (devices && devices.length > 0) {
-                    const cameraId = devices.length > 1 ? devices[devices.length - 1].id : devices[0].id;
-                    log(`Using camera: ${cameraId}`);
+                    // Try different camera selection strategies
+                    let cameraId = devices[devices.length - 1].id; // Default: last camera (usually back)
                     
-                    // Start scanning
-                    await qrScanner.start(
-                        cameraId,
-                        {
-                            fps: 10,
-                            qrbox: 250,
-                            aspectRatio: 1.0,
-                            disableFlip: false
-                        },
-                        (decodedText) => {
-                            handleQRCode(decodedText);
-                        },
-                        (error) => {
-                            // Silent - scanning errors are normal
-                        }
+                    // Try to find back camera explicitly
+                    const backCamera = devices.find(d => 
+                        (d.label && d.label.toLowerCase().includes('back')) || 
+                        (d.label && d.label.toLowerCase().includes('rear'))
                     );
+                    if (backCamera) {
+                        cameraId = backCamera.id;
+                        log(`Using back camera: ${backCamera.label || backCamera.id}`);
+                    } else {
+                        log(`Using camera: ${devices[devices.length - 1].label || cameraId}`);
+                    }
                     
-                    isScanning = true;
-                    document.getElementById('start-btn').disabled = true;
-                    document.getElementById('stop-btn').disabled = false;
-                    log('✓ QR Scanner started successfully!');
-                    speak('QR scanner ready. Point camera at QR code.');
+                    // Try multiple configurations
+                    let started = false;
+                    
+                    // Config 1: With cameraId
+                    try {
+                        log('Attempting to start with cameraId...');
+                        await qrScanner.start(
+                            cameraId,
+                            {
+                                fps: 10,
+                                qrbox: { width: 250, height: 250 },
+                                aspectRatio: 1.0
+                            },
+                            (decodedText) => {
+                                handleQRCode(decodedText);
+                            },
+                            (error) => {
+                                // Silent - scanning errors are normal
+                            }
+                        );
+                        started = true;
+                        log('✓ Started with cameraId');
+                    } catch (err) {
+                        log(`Failed with cameraId: ${err.message}`, true);
+                        
+                        // Config 2: Try with facingMode constraint
+                        try {
+                            log('Attempting with facingMode: environment...');
+                            await qrScanner.start(
+                                { facingMode: "environment" },
+                                {
+                                    fps: 10,
+                                    qrbox: { width: 250, height: 250 }
+                                },
+                                (decodedText) => {
+                                    handleQRCode(decodedText);
+                                },
+                                (error) => {
+                                    // Silent
+                                }
+                            );
+                            started = true;
+                            log('✓ Started with facingMode');
+                        } catch (err2) {
+                            log(`Failed with facingMode: ${err2.message}`, true);
+                            
+                            // Config 3: Try with first camera
+                            try {
+                                log('Attempting with first available camera...');
+                                await qrScanner.start(
+                                    devices[0].id,
+                                    {
+                                        fps: 10,
+                                        qrbox: 250
+                                    },
+                                    (decodedText) => {
+                                        handleQRCode(decodedText);
+                                    },
+                                    (error) => {
+                                        // Silent
+                                    }
+                                );
+                                started = true;
+                                log('✓ Started with first camera');
+                            } catch (err3) {
+                                log(`All methods failed: ${err3.message}`, true);
+                                throw new Error('Could not start camera. Please check browser permissions.');
+                            }
+                        }
+                    }
+                    
+                    if (started) {
+                        isScanning = true;
+                        document.getElementById('start-btn').disabled = true;
+                        document.getElementById('stop-btn').disabled = false;
+                        log('✓ QR Scanner started successfully!');
+                        speak('QR scanner ready. Point camera at QR code.');
+                    }
                 } else {
                     log('No cameras found on this device', true);
+                    alert('No cameras detected. Please ensure:\n1. Camera is not being used by another app\n2. Browser has camera permission\n3. You are using HTTPS');
                 }
                 
             } catch (error) {
                 log(`Error: ${error.message}`, true);
-                alert('Error starting scanner: ' + error.message);
+                log(`Stack: ${error.stack}`, true);
+                alert('Error starting scanner:\n' + error.message + '\n\nPlease ensure:\n1. You are using HTTPS (GitHub Pages URL)\n2. Camera permission is granted\n3. Camera is not being used by another app');
             }
         }
         
@@ -184,7 +253,19 @@
             }
         }
         
-        function handleQRCode(qrData) {
+        async function handleQRCode(qrData) {
+            // Prevent duplicate scans during cooldown
+            if (scanCooldown) {
+                return;
+            }
+            
+            // Stop scanner immediately to prevent continuous scanning
+            if (qrScanner && isScanning) {
+                await stopScanner();
+            }
+            
+            scanCooldown = true;
+            
             log('─────────────────────────────────');
             log(`RAW QR DATA: ${qrData}`);
             
@@ -229,6 +310,19 @@
             }
             
             log('─────────────────────────────────');
+            log('Waiting 3 seconds before next scan...');
+            
+            lastScannedQR = qrId;
+            
+            // Wait 3 seconds, then restart scanner for next QR
+            setTimeout(async () => {
+                scanCooldown = false;
+                if (!isScanning) {
+                    log('Restarting scanner for next QR code...');
+                    speak('Ready for next scan.');
+                    await startScanner();
+                }
+            }, 3000);
         }
     </script>
 </body>
