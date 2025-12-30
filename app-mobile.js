@@ -32,6 +32,8 @@ class MediCareApp {
         this.hospitalRooms = {};
         this.qrScanner = null;
         this.qrScannerActive = false;
+        this.currentLocation = null;
+        this.qrNodeMap = {};
         
         // Reader state
         this.readerActive = false;
@@ -677,12 +679,12 @@ class MediCareApp {
     // ========================================================================
     
     handleNavigationCommand(command) {
-        // Check for direct number input (1-6)
-        const numberMatch = command.match(/\b(one|two|three|four|five|six|1|2|3|4|5|6)\b/);
+        // Check for direct number input (1-5)
+        const numberMatch = command.match(/\b(one|two|three|four|five|1|2|3|4|5)\b/);
         if (numberMatch) {
             const roomNumbers = { 
-                'one': '1', 'two': '2', 'three': '3', 'four': '4', 'five': '5', 'six': '6',
-                '1': '1', '2': '2', '3': '3', '4': '4', '5': '5', '6': '6'
+                'one': '1', 'two': '2', 'three': '3', 'four': '4', 'five': '5',
+                '1': '1', '2': '2', '3': '3', '4': '4', '5': '5'
             };
             const room = roomNumbers[numberMatch[1].toLowerCase()];
             if (room) {
@@ -702,8 +704,6 @@ class MediCareApp {
             this.setNavDestination('4');
         } else if (command.includes('emergency')) {
             this.setNavDestination('5');
-        } else if (command.includes('radiology')) {
-            this.setNavDestination('6');
         } else if (command.includes('list') || command.includes('rooms') || command.includes('departments')) {
             this.listRooms();
         } else if (command.includes('reset')) {
@@ -712,14 +712,57 @@ class MediCareApp {
     }
     
     initNavigation() {
-        // Define hospital rooms
+        // Define hospital rooms for voice commands
         this.hospitalRooms = {
-            '1': { name: 'Cardiology Ward', floor: '2nd Floor, Left Wing' },
-            '2': { name: 'Orthopedics Ward', floor: '2nd Floor, Right Wing' },
-            '3': { name: 'Pediatrics Ward', floor: '3rd Floor, Left Wing' },
-            '4': { name: 'Neurology Ward', floor: '3rd Floor, Right Wing' },
-            '5': { name: 'Emergency Department', floor: 'Ground Floor' },
-            '6': { name: 'Radiology Department', floor: '1st Floor' }
+            '1': { name: 'Cardiology', qr: 'QR_ROOM_1' },
+            '2': { name: 'Orthopedics', qr: 'QR_ROOM_2' },
+            '3': { name: 'Pediatrics', qr: 'QR_ROOM_3' },
+            '4': { name: 'Neurology', qr: 'QR_ROOM_4' },
+            '5': { name: 'Emergency', qr: 'QR_ROOM_5' }
+        };
+        
+        // QR Node map with navigation data
+        this.qrNodeMap = {
+            "QR_START": {
+                name: "Entrance",
+                next: ["QR_MAIN_1"]
+            },
+            "QR_MAIN_1": {
+                name: "Main Corridor 1",
+                next: ["QR_JUNCTION_A"]
+            },
+            "QR_JUNCTION_A": {
+                name: "Junction A",
+                next: ["QR_ROOM_1", "QR_ROOM_2", "QR_JUNCTION_B"]
+            },
+            "QR_JUNCTION_B": {
+                name: "Junction B",
+                next: ["QR_ROOM_3", "QR_ROOM_4", "QR_MAIN_2"]
+            },
+            "QR_MAIN_2": {
+                name: "Main Corridor 2",
+                next: ["QR_ROOM_5"]
+            },
+            "QR_ROOM_1": {
+                name: "Room 1 - Cardiology",
+                next: []
+            },
+            "QR_ROOM_2": {
+                name: "Room 2 - Orthopedics",
+                next: []
+            },
+            "QR_ROOM_3": {
+                name: "Room 3 - Pediatrics",
+                next: []
+            },
+            "QR_ROOM_4": {
+                name: "Room 4 - Neurology",
+                next: []
+            },
+            "QR_ROOM_5": {
+                name: "Room 5 - Emergency",
+                next: []
+            }
         };
         
         this.listRooms();
@@ -728,34 +771,30 @@ class MediCareApp {
     
     listRooms() {
         let message = 'Available departments: ';
-        message += 'Number One: Cardiology Ward. ';
-        message += 'Number Two: Orthopedics Ward. ';
-        message += 'Number Three: Pediatrics Ward. ';
-        message += 'Number Four: Neurology Ward. ';
-        message += 'Number Five: Emergency Department. ';
-        message += 'Number Six: Radiology Department. ';
-        message += 'Please say a number from one to six to navigate.';
+        message += 'Number One: Cardiology. ';
+        message += 'Number Two: Orthopedics. ';
+        message += 'Number Three: Pediatrics. ';
+        message += 'Number Four: Neurology. ';
+        message += 'Number Five: Emergency. ';
+        message += 'Please say a number from one to five to set your destination.';
         
         this.speak(message, true);
     }
     
     setNavDestination(roomNum) {
         if (!this.hospitalRooms[roomNum]) {
-            this.speak('Invalid room. Please say a room number from one to six.');
+            this.speak('Invalid room. Please say a room number from one to five.');
             return;
         }
         
         const room = this.hospitalRooms[roomNum];
-        this.navDestination = roomNum;
-        this.navCurrentStep = 0;
-        
-        // Define navigation steps based on room
-        this.navSteps = this.getNavigationSteps(roomNum);
+        this.navDestination = room.qr;
         
         document.querySelector('#nav-destination').textContent = room.name;
-        document.querySelector('#nav-instruction-text').textContent = this.navSteps[0];
         
-        this.speak(`Destination set to ${room.name}, ${room.floor}. ${this.navSteps[0]}`, true);
+        const msg = `Destination set to ${room.name}. Please scan QR codes along the path for turn-by-turn directions.`;
+        this.speak(msg, true);
+        document.querySelector('#nav-instruction-text').textContent = 'Scan QR codes for directions';
     }
     
     getNavigationSteps(roomNum) {
@@ -822,6 +861,7 @@ class MediCareApp {
         this.navDestination = null;
         this.navCurrentStep = 0;
         this.navSteps = [];
+        this.currentLocation = null;
         document.querySelector('#nav-destination').textContent = 'Not Set';
         document.querySelector('#nav-instruction-text').textContent = 'Scan QR code or say room number';
         this.speak('Navigation reset.');
@@ -894,15 +934,8 @@ class MediCareApp {
                             navigator.vibrate(200);
                         }
                         
-                        // Check if QR contains room number (1-6)
-                        const roomMatch = decodedText.match(/room[:\s]*([1-6])|^([1-6])$/i);
-                        if (roomMatch) {
-                            const roomNum = roomMatch[1] || roomMatch[2];
-                            this.speak(`QR code scanned. Navigating to room ${roomNum}.`);
-                            this.setNavDestination(roomNum);
-                        } else {
-                            this.speak('Invalid QR code. Please scan a valid hospital room code.');
-                        }
+                        // Handle hospital QR codes
+                        this.handleQRCode(decodedText);
                     },
                     (error) => {
                         // QR scan error - silent, just keep scanning
@@ -933,6 +966,70 @@ class MediCareApp {
             } catch (err) {
                 console.error('QR Scanner stop error:', err);
             }
+        }
+    }
+    
+    handleQRCode(qrData) {
+        // Check if it's a valid hospital QR code
+        if (!this.qrNodeMap[qrData]) {
+            this.speak('Invalid QR code. Please scan a hospital location QR code.');
+            return;
+        }
+        
+        this.currentLocation = qrData;
+        const node = this.qrNodeMap[qrData];
+        
+        // If no destination set, just announce current location
+        if (!this.navDestination) {
+            this.speak(`You are at ${node.name}. Please set a destination first.`);
+            document.querySelector('#nav-instruction-text').textContent = `At: ${node.name}`;
+            return;
+        }
+        
+        // Check if we've reached the destination
+        if (qrData === this.navDestination) {
+            this.speak(`You have arrived at ${node.name}.`);
+            document.querySelector('#nav-instruction-text').textContent = `Arrived: ${node.name}`;
+            return;
+        }
+        
+        // Give navigation instruction
+        const instruction = this.getNavigationInstruction(qrData, this.navDestination);
+        this.speak(instruction, true);
+        document.querySelector('#nav-instruction-text').textContent = instruction;
+    }
+    
+    getNavigationInstruction(currentQR, destQR) {
+        const instructions = {
+            "QR_START": {
+                "default": "Go straight for 10 meters to reach Main Corridor One."
+            },
+            "QR_MAIN_1": {
+                "default": "Continue straight for 8 meters to reach Junction A."
+            },
+            "QR_JUNCTION_A": {
+                "QR_ROOM_1": "Turn left and walk 5 meters to reach Room One, Cardiology.",
+                "QR_ROOM_2": "Turn right and walk 5 meters to reach Room Two, Orthopedics.",
+                "QR_ROOM_3": "Go straight for 10 meters to reach Junction B.",
+                "QR_ROOM_4": "Go straight for 10 meters to reach Junction B.",
+                "QR_ROOM_5": "Go straight for 10 meters to reach Junction B."
+            },
+            "QR_JUNCTION_B": {
+                "QR_ROOM_3": "Turn left and walk 5 meters to reach Room Three, Pediatrics.",
+                "QR_ROOM_4": "Turn right and walk 5 meters to reach Room Four, Neurology.",
+                "QR_ROOM_5": "Continue straight for 8 meters to reach Main Corridor Two."
+            },
+            "QR_MAIN_2": {
+                "QR_ROOM_5": "Go straight for 5 meters to reach Room Five, Emergency."
+            }
+        };
+        
+        if (instructions[currentQR] && instructions[currentQR][destQR]) {
+            return instructions[currentQR][destQR];
+        } else if (instructions[currentQR] && instructions[currentQR]["default"]) {
+            return instructions[currentQR]["default"];
+        } else {
+            return "Continue following the path.";
         }
     }
     
