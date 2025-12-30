@@ -923,28 +923,47 @@ class MediCareApp {
     
     async startReader() {
         try {
+            console.log('🎬 Starting sign reader...');
+            
             const video = document.querySelector('#reader-camera');
             this.readerStream = await navigator.mediaDevices.getUserMedia({ 
-                video: { facingMode: 'environment' } 
+                video: { 
+                    facingMode: 'environment',
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                } 
             });
             video.srcObject = this.readerStream;
             
+            console.log('✅ Camera started');
+            
             this.readerActive = true;
             document.querySelector('#reader-toggle-btn').innerHTML = '<span class="material-symbols-outlined">stop</span> Stop Scanning';
-            document.querySelector('#reader-status-badge').innerHTML = '<span class="text-success">Scanning</span>';
+            document.querySelector('#reader-status-badge').innerHTML = '<span class="text-success">🔴 Scanning...</span>';
+            document.querySelector('#reader-text').textContent = 'Point camera at medical signs...';
             
-            this.speak('Camera activated. Point at signs or text. I will read them aloud automatically.');
+            this.speak('Camera activated. Point at medical signs. Text will be read automatically.');
             
-            // Simulate OCR detection (replace with actual OCR API)
-            this.startOCRDetection();
+            // Start OCR detection after a brief delay for camera to stabilize
+            setTimeout(() => {
+                console.log('🚀 Starting OCR detection...');
+                this.startOCRDetection();
+            }, 500);
         } catch (error) {
-            console.error('Camera error:', error);
-            this.speak('Unable to access camera. Please check permissions.');
+            console.error('❌ Camera error:', error);
+            this.speak('Unable to access camera. Please allow camera permission.');
         }
     }
     
     stopReader() {
         console.log('🛑 Stopping sign reader...');
+        
+        // Clear OCR interval
+        if (this.ocrInterval) {
+            clearInterval(this.ocrInterval);
+            this.ocrInterval = null;
+            console.log('⏹️ OCR interval cleared');
+        }
         
         if (this.readerStream) {
             console.log('📷 Releasing camera tracks...');
@@ -974,13 +993,17 @@ class MediCareApp {
     startOCRDetection() {
         if (!this.readerActive) return;
         
-        // Perform OCR every 2 seconds for faster detection
-        setTimeout(async () => {
+        // Run first scan immediately
+        this.performOCR();
+        
+        // Then perform OCR every 1 second for fast, real-time detection
+        this.ocrInterval = setInterval(async () => {
             if (this.readerActive) {
                 await this.performOCR();
-                this.startOCRDetection(); // Continue checking
+            } else {
+                clearInterval(this.ocrInterval);
             }
-        }, 2000);
+        }, 1000);
     }
     
     async performOCR() {
@@ -1048,9 +1071,9 @@ class MediCareApp {
         }
         
         try {
-            console.log('🔧 Preprocessing image for better OCR...');
+            console.log('🔧 Enhancing image...');
             
-            // Enhance image for better OCR
+            // Simple enhancement - just increase contrast slightly
             const enhancedCanvas = document.createElement('canvas');
             enhancedCanvas.width = canvas.width;
             enhancedCanvas.height = canvas.height;
@@ -1059,37 +1082,43 @@ class MediCareApp {
             // Draw original
             ctx.drawImage(canvas, 0, 0);
             
-            // Apply filters for better text detection
+            // Slight contrast boost only
             const imageData = ctx.getImageData(0, 0, enhancedCanvas.width, enhancedCanvas.height);
             const data = imageData.data;
+            const factor = 1.5; // Moderate contrast increase
             
-            // Increase contrast and brightness
             for (let i = 0; i < data.length; i += 4) {
-                // Convert to grayscale with high contrast
-                const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
-                const contrast = avg > 128 ? 255 : 0; // Binary threshold
-                data[i] = data[i + 1] = data[i + 2] = contrast;
+                data[i] = Math.min(255, Math.max(0, factor * (data[i] - 128) + 128));
+                data[i + 1] = Math.min(255, Math.max(0, factor * (data[i + 1] - 128) + 128));
+                data[i + 2] = Math.min(255, Math.max(0, factor * (data[i + 2] - 128) + 128));
             }
             
             ctx.putImageData(imageData, 0, 0);
             
-            console.log('📖 Running Tesseract recognition...');
+            console.log('📖 Running Tesseract...');
             
             const result = await Tesseract.recognize(enhancedCanvas, 'eng', {
                 logger: m => {
                     if (m.status === 'recognizing text') {
-                        console.log(`   Progress: ${Math.round(m.progress * 100)}%`);
+                        const pct = Math.round(m.progress * 100);
+                        if (pct % 25 === 0) { // Log every 25%
+                            console.log(`   📊 ${pct}%`);
+                        }
                     }
-                },
-                tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 -.,',
-                tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK
+                }
             });
             
-            console.log('✅ Tesseract completed');
-            console.log('📝 Confidence:', result.data.confidence);
-            console.log('📝 Text:', result.data.text);
+            const text = result.data.text.trim();
+            const confidence = result.data.confidence;
             
-            return result.data.text;
+            console.log('✅ OCR Complete!');
+            console.log('📝 Text:', text || '(empty)');
+            console.log('📊 Confidence:', confidence.toFixed(1) + '%');
+            
+            // Show on screen for visual feedback
+            document.querySelector('#reader-text').textContent = text || 'Scanning...';
+            
+            return text;
         } catch (error) {
             console.error('❌ Tesseract error:', error);
             return '';
