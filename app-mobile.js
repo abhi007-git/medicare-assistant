@@ -53,6 +53,15 @@ class MediCareApp {
         await this.requestPermissions();
         this.initVoiceRecognition();
         
+        // Preload speech voices for medical terms
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.getVoices();
+            window.speechSynthesis.onvoiceschanged = () => {
+                const voices = window.speechSynthesis.getVoices();
+                console.log('📢 Speech voices loaded:', voices.length);
+            };
+        }
+        
         // Visual feedback for blind users' helpers
         setTimeout(() => {
             this.speak('Welcome to MediCare Assistant. I am always listening. Say Help to hear all commands.');
@@ -1402,12 +1411,29 @@ class MediCareApp {
     speakMedicalTerm(text) {
         console.log('🎤 speakMedicalTerm called with:', text);
         
+        // FORCE WAKE UP speech synthesis
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.resume();
+        
+        // Wait for voices to load if not ready
+        const voices = window.speechSynthesis.getVoices();
+        console.log('📢 Available voices:', voices.length);
+        
         // Create speech utterance
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.rate = 0.8; // Slower for clarity
         utterance.volume = 1.0; // Maximum volume
         utterance.pitch = 1.0;
         utterance.lang = 'en-US';
+        
+        // Use first English voice if available
+        if (voices.length > 0) {
+            const enVoice = voices.find(v => v.lang.startsWith('en'));
+            if (enVoice) {
+                utterance.voice = enVoice;
+                console.log('🗣️ Using voice:', enVoice.name);
+            }
+        }
         
         utterance.onstart = () => {
             console.log('✅✅✅ SPEECH STARTED:', text);
@@ -1421,12 +1447,20 @@ class MediCareApp {
         
         utterance.onerror = (e) => {
             console.error('❌ Speech error:', e.error, e);
+            console.error('Error details:', e);
         };
         
-        // SPEAK IT!
+        // SPEAK IT - MULTIPLE METHODS!
         console.log('🔊 Calling speechSynthesis.speak()...');
-        window.speechSynthesis.speak(utterance);
-        console.log('🎤 Speech queued successfully');
+        try {
+            window.speechSynthesis.speak(utterance);
+            console.log('🎤 Speech queued successfully');
+            
+            // Force resume again after queueing
+            setTimeout(() => window.speechSynthesis.resume(), 10);
+        } catch (err) {
+            console.error('❌ Speech exception:', err);
+        }
     }
     
     speakLastDetection() {
