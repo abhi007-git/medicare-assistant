@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Scanner Test</title>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        #qr-reader {
+            border: 3px solid #4CAF50;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .result {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .btn {
+            background: #4CAF50;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        .btn:hover {
+            background: #45a049;
+        }
+        .btn.red {
+            background: #f44336;
+        }
+        .btn.red:hover {
+            background: #da190b;
+        }
+        .log {
+            background: #263238;
+            color: #aed581;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        h1 { color: #333; }
+        h2 { color: #666; margin-top: 30px; }
+        .success { color: #4CAF50; font-weight: bold; }
+        .error { color: #f44336; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>QR Scanner Test for Hospital Navigation</h1>
+    
+    <button class="btn" id="start-btn" onclick="startScanner()">Start Scanner</button>
+    <button class="btn red" id="stop-btn" onclick="stopScanner()" disabled>Stop Scanner</button>
+    
+    <div id="qr-reader"></div>
+    
+    <div class="result">
+        <h2>Last Scanned Result:</h2>
+        <p><strong>Raw Data:</strong> <span id="raw-data">None</span></p>
+        <p><strong>Parsed ID:</strong> <span id="parsed-id">None</span></p>
+        <p><strong>Instruction:</strong> <span id="instruction">None</span></p>
+    </div>
+    
+    <h2>Console Log:</h2>
+    <div class="log" id="console-log">Ready to scan...</div>
+    
+    <script>
+        let qrScanner = null;
+        let isScanning = false;
+        
+        const qrInstructions = {
+            "QR_START": "You are at the hospital entrance. Go straight for 10 meters to reach Main Corridor One.",
+            "QR_MAIN_1": "You are at Main Corridor One. Continue straight for 8 meters to reach Junction A.",
+            "QR_JUNCTION_A": "You are at Junction A. Turn left for Room One Cardiology, turn right for Room Two Orthopedics, or go straight to reach Junction B.",
+            "QR_JUNCTION_B": "You are at Junction B. Turn left for Room Three Pediatrics, turn right for Room Four Neurology, or continue straight for Main Corridor Two.",
+            "QR_MAIN_2": "You are at Main Corridor Two. Go straight for 5 meters to reach Room Five, Emergency.",
+            "QR_ROOM_1": "You have arrived at Room One, Cardiology department.",
+            "QR_ROOM_2": "You have arrived at Room Two, Orthopedics department.",
+            "QR_ROOM_3": "You have arrived at Room Three, Pediatrics department.",
+            "QR_ROOM_4": "You have arrived at Room Four, Neurology department.",
+            "QR_ROOM_5": "You have arrived at Room Five, Emergency department."
+        };
+        
+        function log(message, isError = false) {
+            const consoleLog = document.getElementById('console-log');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = isError ? 'error' : 'success';
+            consoleLog.innerHTML = `<span class="${className}">[${timestamp}] ${message}</span>\n` + consoleLog.innerHTML;
+            console.log(message);
+        }
+        
+        function speak(text) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 0.9;
+            utterance.pitch = 1.0;
+            utterance.volume = 1.0;
+            speechSynthesis.speak(utterance);
+            log(`Speaking: ${text}`);
+        }
+        
+        async function startScanner() {
+            try {
+                log('Requesting camera permission...');
+                
+                // Request camera permission first
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: "environment" } 
+                });
+                stream.getTracks().forEach(track => track.stop());
+                log('Camera permission granted ✓');
+                
+                // Initialize QR scanner
+                qrScanner = new Html5Qrcode("qr-reader");
+                log('QR Scanner initialized ✓');
+                
+                // Get available cameras
+                const devices = await Html5Qrcode.getCameras();
+                log(`Found ${devices.length} camera(s)`);
+                devices.forEach((device, index) => {
+                    log(`  Camera ${index + 1}: ${device.label}`);
+                });
+                
+                if (devices && devices.length > 0) {
+                    const cameraId = devices.length > 1 ? devices[devices.length - 1].id : devices[0].id;
+                    log(`Using camera: ${cameraId}`);
+                    
+                    // Start scanning
+                    await qrScanner.start(
+                        cameraId,
+                        {
+                            fps: 10,
+                            qrbox: 250,
+                            aspectRatio: 1.0,
+                            disableFlip: false
+                        },
+                        (decodedText) => {
+                            handleQRCode(decodedText);
+                        },
+                        (error) => {
+                            // Silent - scanning errors are normal
+                        }
+                    );
+                    
+                    isScanning = true;
+                    document.getElementById('start-btn').disabled = true;
+                    document.getElementById('stop-btn').disabled = false;
+                    log('✓ QR Scanner started successfully!');
+                    speak('QR scanner ready. Point camera at QR code.');
+                } else {
+                    log('No cameras found on this device', true);
+                }
+                
+            } catch (error) {
+                log(`Error: ${error.message}`, true);
+                alert('Error starting scanner: ' + error.message);
+            }
+        }
+        
+        async function stopScanner() {
+            if (qrScanner && isScanning) {
+                try {
+                    await qrScanner.stop();
+                    isScanning = false;
+                    document.getElementById('start-btn').disabled = false;
+                    document.getElementById('stop-btn').disabled = true;
+                    log('Scanner stopped');
+                } catch (err) {
+                    log(`Stop error: ${err.message}`, true);
+                }
+            }
+        }
+        
+        function handleQRCode(qrData) {
+            log('─────────────────────────────────');
+            log(`RAW QR DATA: ${qrData}`);
+            
+            document.getElementById('raw-data').textContent = qrData;
+            
+            // Try to parse JSON
+            let qrId = qrData;
+            try {
+                const parsed = JSON.parse(qrData);
+                log(`Parsed as JSON: ${JSON.stringify(parsed)}`);
+                
+                if (parsed.id) {
+                    qrId = parsed.id;
+                    log(`Extracted ID: ${qrId}`);
+                    document.getElementById('parsed-id').textContent = qrId;
+                } else {
+                    log('JSON has no "id" field, using raw data');
+                    document.getElementById('parsed-id').textContent = 'No ID field';
+                }
+            } catch (e) {
+                log('Not JSON format, using raw data as ID');
+                document.getElementById('parsed-id').textContent = qrData + ' (not JSON)';
+            }
+            
+            // Get instruction
+            const instruction = qrInstructions[qrId];
+            
+            if (instruction) {
+                log(`✓ Found instruction for ${qrId}`);
+                log(`Instruction: ${instruction}`);
+                document.getElementById('instruction').textContent = instruction;
+                speak(instruction);
+            } else {
+                log(`⚠ No instruction found for: ${qrId}`, true);
+                document.getElementById('instruction').textContent = 'Unknown QR code';
+                speak('Unknown QR code: ' + qrId);
+            }
+            
+            // Vibrate if available
+            if (navigator.vibrate) {
+                navigator.vibrate(200);
+            }
+            
+            log('─────────────────────────────────');
+        }
+    </script>
+</body>
+</html>
