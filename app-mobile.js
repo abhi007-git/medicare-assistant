@@ -684,6 +684,50 @@ class MediCareApp {
     }
     
     initNavigation() {
+        // QR code spoken outputs from qr.html
+        this.qrNodeMap = {
+            "QR_START": {
+                name: "Entrance",
+                spoken: "You are at the hospital entrance."
+            },
+            "QR_MAIN_1": {
+                name: "Main Corridor 1",
+                spoken: "You are at Main Corridor One."
+            },
+            "QR_JUNCTION_A": {
+                name: "Junction A",
+                spoken: "You are at Junction A."
+            },
+            "QR_ROOM_1": {
+                name: "Room 1 - Cardiology",
+                spoken: "You have arrived at Room One, Cardiology department."
+            },
+            "QR_ROOM_2": {
+                name: "Room 2 - Orthopedics",
+                spoken: "You have arrived at Room Two, Orthopedics department."
+            },
+            "QR_JUNCTION_B": {
+                name: "Junction B",
+                spoken: "You are at Junction B."
+            },
+            "QR_ROOM_3": {
+                name: "Room 3 - Pediatrics",
+                spoken: "You have arrived at Room Three, Pediatrics department."
+            },
+            "QR_ROOM_4": {
+                name: "Room 4 - Neurology",
+                spoken: "You have arrived at Room Four, Neurology department."
+            },
+            "QR_MAIN_2": {
+                name: "Main Corridor 2",
+                spoken: "You are at Main Corridor Two."
+            },
+            "QR_ROOM_5": {
+                name: "Room 5 - Emergency",
+                spoken: "You have arrived at Room Five, Emergency department."
+            }
+        };
+        
         this.speak('Navigation section. Please scan a QR code.');
         this.startQRScanner();
     }
@@ -798,10 +842,21 @@ class MediCareApp {
     }
     
     handleQRCode(qrData) {
-        // Simply speak out the QR code data
-        this.speak(qrData, true);
-        document.querySelector('#nav-destination').textContent = qrData;
-        document.querySelector('#nav-instruction-text').textContent = qrData;
+        // Check if it's a valid hospital QR code
+        if (!this.qrNodeMap[qrData]) {
+            // If not in map, just speak the QR data as-is
+            this.speak(qrData, true);
+            document.querySelector('#nav-destination').textContent = qrData;
+            document.querySelector('#nav-instruction-text').textContent = qrData;
+            return;
+        }
+        
+        const node = this.qrNodeMap[qrData];
+        
+        // Speak the specific message for this QR code
+        this.speak(node.spoken, true);
+        document.querySelector('#nav-destination').textContent = node.name;
+        document.querySelector('#nav-instruction-text').textContent = node.spoken;
     }
     
     // ========================================================================
