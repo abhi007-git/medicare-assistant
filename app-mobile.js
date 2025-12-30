@@ -925,30 +925,173 @@ class MediCareApp {
     }
     
     startOCRDetection() {
-        // Real OCR detection - only speaks if actual text is detected
-        // Note: This requires actual OCR implementation (Tesseract.js or similar)
-        // For now, this function will remain silent unless real text is detected
-        // Developers should integrate actual OCR library here
-        
         if (!this.readerActive) return;
         
-        // TODO: Implement real OCR detection using Tesseract.js or similar
-        // Example integration:
-        // const video = document.querySelector('#reader-camera');
-        // const canvas = document.createElement('canvas');
-        // canvas.getContext('2d').drawImage(video, 0, 0);
-        // Tesseract.recognize(canvas).then(result => {
-        //     if (result.data.text.trim()) {
-        //         this.handleDetectedText(result.data.text);
-        //     }
-        // });
-        
-        // For demonstration: Silent unless real OCR is implemented
-        setTimeout(() => {
+        // Perform OCR every 3 seconds
+        setTimeout(async () => {
             if (this.readerActive) {
+                await this.performOCR();
                 this.startOCRDetection(); // Continue checking
             }
-        }, 2000);
+        }, 3000);
+    }
+    
+    async performOCR() {
+        try {
+            const video = document.querySelector('#reader-camera');
+            if (!video || video.readyState !== video.HAVE_ENOUGH_DATA) {
+                return; // Video not ready
+            }
+            
+            // Capture frame from video
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // Check which OCR service to use
+            const ocrService = window.API_CONFIG?.OCR_SERVICE || 'tesseract';
+            
+            let text = '';
+            
+            if (ocrService === 'tesseract') {
+                // Use Tesseract.js (client-side, no API key needed)
+                text = await this.ocrWithTesseract(canvas);
+            } else if (ocrService === 'ocrspace') {
+                // Use OCR.space API
+                text = await this.ocrWithOCRSpace(canvas);
+            } else if (ocrService === 'google') {
+                // Use Google Cloud Vision API
+                text = await this.ocrWithGoogleVision(canvas);
+            } else if (ocrService === 'azure') {
+                // Use Azure Computer Vision API
+                text = await this.ocrWithAzure(canvas);
+            }
+            
+            if (text && text.trim()) {
+                this.handleDetectedText(text.trim());
+            }
+        } catch (error) {
+            console.error('OCR error:', error);
+        }
+    }
+    
+    async ocrWithTesseract(canvas) {
+        // Tesseract.js - Client-side OCR (FREE, NO API KEY)
+        if (typeof Tesseract === 'undefined') {
+            console.error('Tesseract.js not loaded');
+            return '';
+        }
+        
+        try {
+            const result = await Tesseract.recognize(canvas, 'eng', {
+                logger: m => console.log(m)
+            });
+            return result.data.text;
+        } catch (error) {
+            console.error('Tesseract error:', error);
+            return '';
+        }
+    }
+    
+    async ocrWithOCRSpace(canvas) {
+        // OCR.space API
+        const config = window.API_CONFIG?.OCR_SPACE;
+        if (!config || !config.API_KEY) {
+            console.error('OCR.space API key not configured');
+            this.speak('OCR API key not configured. Please add your API key in config.js');
+            return '';
+        }
+        
+        try {
+            const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.95));
+            const formData = new FormData();
+            formData.append('file', blob, 'image.jpg');
+            formData.append('apikey', config.API_KEY);
+            formData.append('language', 'eng');
+            
+            const response = await fetch(config.URL, {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+            return result.ParsedResults?.[0]?.ParsedText || '';
+        } catch (error) {
+            console.error('OCR.space error:', error);
+            return '';
+        }
+    }
+    
+    async ocrWithGoogleVision(canvas) {
+        // Google Cloud Vision API
+        const config = window.API_CONFIG?.GOOGLE_VISION;
+        if (!config || !config.API_KEY) {
+            console.error('Google Vision API key not configured');
+            this.speak('Google Vision API key not configured. Please add your API key in config.js');
+            return '';
+        }
+        
+        try {
+            const base64Image = canvas.toDataURL('image/jpeg', 0.95).split(',')[1];
+            
+            const response = await fetch(`${config.URL}?key=${config.API_KEY}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    requests: [{
+                        image: { content: base64Image },
+                        features: [{ type: 'TEXT_DETECTION' }]
+                    }]
+                })
+            });
+            
+            const result = await response.json();
+            return result.responses?.[0]?.fullTextAnnotation?.text || '';
+        } catch (error) {
+            console.error('Google Vision error:', error);
+            return '';
+        }
+    }
+    
+    async ocrWithAzure(canvas) {
+        // Microsoft Azure Computer Vision API
+        const config = window.API_CONFIG?.AZURE_VISION;
+        if (!config || !config.API_KEY || !config.ENDPOINT) {
+            console.error('Azure Vision API key/endpoint not configured');
+            this.speak('Azure Vision API not configured. Please add your API key and endpoint in config.js');
+            return '';
+        }
+        
+        try {
+            const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.95));
+            
+            const response = await fetch(`${config.ENDPOINT}${config.URL_SUFFIX}`, {
+                method: 'POST',
+                headers: {
+                    'Ocp-Apim-Subscription-Key': config.API_KEY,
+                    'Content-Type': 'application/octet-stream'
+                },
+                body: blob
+            });
+            
+            const result = await response.json();
+            const regions = result.regions || [];
+            let text = '';
+            regions.forEach(region => {
+                region.lines.forEach(line => {
+                    line.words.forEach(word => {
+                        text += word.text + ' ';
+                    });
+                    text += '\n';
+                });
+            });
+            return text;
+        } catch (error) {
+            console.error('Azure Vision error:', error);
+            return '';
+        }
     }
     
     handleDetectedText(text) {
