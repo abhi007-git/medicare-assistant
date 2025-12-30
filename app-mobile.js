@@ -836,20 +836,39 @@ class MediCareApp {
         
         try {
             const qrReader = document.querySelector('#qr-reader');
-            if (!qrReader) return;
+            if (!qrReader) {
+                console.error('QR reader element not found');
+                return;
+            }
             
+            // Check if Html5Qrcode is available
+            if (typeof Html5Qrcode === 'undefined') {
+                console.error('Html5Qrcode library not loaded');
+                this.speak('QR scanner library not available.');
+                return;
+            }
+            
+            console.log('Initializing QR scanner...');
             this.qrScanner = new Html5Qrcode("qr-reader");
-            this.qrScannerActive = true;
             
+            const config = {
+                fps: 10,
+                qrbox: { width: 250, height: 250 },
+                aspectRatio: 1.0
+            };
+            
+            // Request camera and start scanning
             this.qrScanner.start(
                 { facingMode: "environment" }, // Use back camera
-                {
-                    fps: 10,
-                    qrbox: { width: 250, height: 250 }
-                },
+                config,
                 (decodedText) => {
                     // QR code successfully scanned
                     console.log('QR Code detected:', decodedText);
+                    
+                    // Vibrate if available
+                    if (navigator.vibrate) {
+                        navigator.vibrate(200);
+                    }
                     
                     // Check if QR contains room number (1-6)
                     const roomMatch = decodedText.match(/room[:\s]*([1-6])|^([1-6])$/i);
@@ -863,15 +882,21 @@ class MediCareApp {
                 },
                 (error) => {
                     // QR scan error - silent, just keep scanning
-                    // console.log('Scanning...', error);
+                    // Don't log every frame error
                 }
-            ).catch(err => {
+            ).then(() => {
+                this.qrScannerActive = true;
+                console.log('QR Scanner started successfully');
+                this.speak('QR scanner ready. Point camera at room QR code.');
+            }).catch(err => {
                 console.error('QR Scanner start error:', err);
                 this.qrScannerActive = false;
+                this.speak('Unable to start QR scanner. Please check camera permissions.');
             });
             
         } catch (error) {
             console.error('QR Scanner initialization error:', error);
+            this.speak('QR scanner initialization failed.');
         }
     }
     
