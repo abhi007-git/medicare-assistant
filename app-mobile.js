@@ -40,6 +40,7 @@ class MediCareApp {
         this.readerActive = false;
         this.readerStream = null;
         this.lastMedicalTerms = ''; // Store last detected medical terms for repeat command
+        this.scanCooldown = false; // Prevent scanning during cooldown
         
         this.init();
     }
@@ -1003,17 +1004,25 @@ class MediCareApp {
     startOCRDetection() {
         if (!this.readerActive) return;
         
-        // Run first scan immediately
-        this.performOCR();
+        // Start continuous scanning with recursive calls
+        this.continuousOCRScan();
+    }
+    
+    async continuousOCRScan() {
+        if (!this.readerActive) return;
         
-        // Then perform OCR every 7 seconds (user requested delay)
-        this.ocrInterval = setInterval(async () => {
-            if (this.readerActive) {
-                await this.performOCR();
-            } else {
-                clearInterval(this.ocrInterval);
-            }
-        }, 7000);
+        // If in cooldown, wait and try again
+        if (this.scanCooldown) {
+            console.log('⏳ Scan cooldown active, waiting...');
+            setTimeout(() => this.continuousOCRScan(), 500);
+            return;
+        }
+        
+        // Perform scan immediately
+        await this.performOCR();
+        
+        // Schedule next scan (quick check if still active)
+        setTimeout(() => this.continuousOCRScan(), 500);
     }
     
     async performOCR() {
@@ -1376,6 +1385,15 @@ class MediCareApp {
             document.querySelector('#reader-text').textContent = 'Scanning... (no medical terms)';
             return;
         }
+        
+        // MEDICAL TERMS FOUND! Trigger 7-second cooldown
+        this.scanCooldown = true;
+        console.log('🛑 Cooldown activated - no scanning for 7 seconds');
+        
+        setTimeout(() => {
+            this.scanCooldown = false;
+            console.log('✅ Cooldown finished - resuming scans');
+        }, 7000);
         
         // Speak only the medical terms found
         const termsToSpeak = foundTerms.join(', ');
