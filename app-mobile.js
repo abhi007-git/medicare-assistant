@@ -380,9 +380,17 @@ class MediCareApp {
     // ========================================================================
     
     navigateTo(screenName) {
-        // Stop QR scanner when leaving navigation screen
+        console.log(`📍 Navigating from "${this.currentScreen}" to "${screenName}"`);
+        
+        // Clean up previous screen resources
         if (this.currentScreen === 'navigation' && screenName !== 'navigation') {
+            console.log('🛑 Leaving navigation, stopping QR scanner...');
             this.stopQRScanner();
+        }
+        
+        if (this.currentScreen === 'reader' && screenName !== 'reader') {
+            console.log('🛑 Leaving sign reader, stopping camera...');
+            this.stopReader();
         }
         
         // Hide all screens
@@ -414,9 +422,11 @@ class MediCareApp {
                 this.initQueue();
                 break;
             case 'navigation':
+                console.log('✅ Initializing navigation section...');
                 this.initNavigation();
                 break;
             case 'reader':
+                console.log('✅ Initializing sign reader section...');
                 this.speak('Sign reader screen. Say Start to scan signs.');
                 break;
             case 'settings':
@@ -813,15 +823,25 @@ class MediCareApp {
     }
     
     async stopQRScanner() {
+        console.log('🛑 Stopping QR scanner...');
+        
         if (this.qrScanner && this.qrScannerActive) {
             try {
                 await this.qrScanner.stop();
+                await this.qrScanner.clear();
                 this.qrScannerActive = false;
-                console.log('QR Scanner stopped');
+                console.log('✅ QR Scanner stopped and cleared');
             } catch (err) {
-                console.error('QR Scanner stop error:', err);
+                console.error('❌ QR Scanner stop error:', err);
+                // Force stop even if error
+                this.qrScannerActive = false;
             }
+        } else {
+            console.log('⚠️ QR Scanner was not active');
         }
+        
+        // Reset cooldown if any
+        this.qrScanCooldown = false;
     }
     
     async handleQRCode(qrData) {
@@ -924,16 +944,31 @@ class MediCareApp {
     }
     
     stopReader() {
+        console.log('🛑 Stopping sign reader...');
+        
         if (this.readerStream) {
-            this.readerStream.getTracks().forEach(track => track.stop());
+            console.log('📷 Releasing camera tracks...');
+            this.readerStream.getTracks().forEach(track => {
+                track.stop();
+                console.log('   ✅ Track stopped:', track.kind);
+            });
             this.readerStream = null;
+            console.log('✅ Camera stream released');
         }
         
         this.readerActive = false;
-        document.querySelector('#reader-toggle-btn').innerHTML = '<span class="material-symbols-outlined">photo_camera</span> Start Scanning';
-        document.querySelector('#reader-status-badge').innerHTML = '<span class="text-text-muted">Idle</span>';
         
-        this.speak('Scanning stopped.');
+        const toggleBtn = document.querySelector('#reader-toggle-btn');
+        const statusBadge = document.querySelector('#reader-status-badge');
+        
+        if (toggleBtn) {
+            toggleBtn.innerHTML = '<span class="material-symbols-outlined">photo_camera</span> Start Scanning';
+        }
+        if (statusBadge) {
+            statusBadge.innerHTML = '<span class="text-text-muted">Idle</span>';
+        }
+        
+        console.log('✅ Sign reader stopped completely');
     }
     
     startOCRDetection() {
