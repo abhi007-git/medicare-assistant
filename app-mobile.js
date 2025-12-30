@@ -1311,58 +1311,79 @@ class MediCareApp {
         
         console.log('✅ Text is valid length:', text.length, 'characters');
         
-        // Medical and hospital-related keywords (comprehensive list)
-        const medicalKeywords = [
-            // Departments
-            'radiology', 'cardiology', 'neurology', 'orthopedics', 'orthopedic', 'pediatrics', 'pediatric',
-            'oncology', 'dermatology', 'gynecology', 'gynaecology', 'urology', 'ophthalmology',
-            'psychiatry', 'pathology', 'anesthesiology', 'anesthesia', 'surgery', 'surgical',
-            'medicine', 'medical', 'cardio', 'neuro', 'ortho', 'gastro', 'pulmonary',
-            // Common terms
-            'department', 'dept', 'ward', 'room', 'emergency', 'icu', 'opd', 'ot',
-            'pharmacy', 'laboratory', 'lab', 'reception', 'registration', 'admit', 'discharge',
-            'operation', 'theatre', 'theater', 'exit', 'entrance', 'waiting', 'consultation',
-            'doctor', 'dr', 'nurse', 'patient', 'bed', 'floor', 'wing', 'unit', 'block',
-            'clinic', 'hospital', 'care', 'center', 'centre', 'diagnostic', 'scan', 'imaging',
-            // Procedures & Equipment
-            'x-ray', 'xray', 'ct', 'mri', 'ultrasound', 'ecg', 'ekg', 'echo',
-            'blood', 'test', 'therapy', 'treatment', 'vaccine', 'injection',
-            // Directions & Facilities
-            'left', 'right', 'straight', 'turn', 'ahead', 'stairs', 'lift',
-            'elevator', 'parking', 'restroom', 'toilet', 'washroom', 'cafeteria', 'canteen',
-            // Partial matches for medical terms
-            'ology', 'ological', 'ics', 'tion', 'ment', 'ical', 'ology'
+        // Comprehensive medical terms dictionary
+        const medicalTerms = [
+            // Departments (full names)
+            'radiology', 'cardiology', 'neurology', 'orthopedics', 'orthopedic', 
+            'pediatrics', 'pediatric', 'oncology', 'dermatology', 'gynecology', 
+            'gynaecology', 'urology', 'ophthalmology', 'psychiatry', 'pathology',
+            'anesthesiology', 'anesthesia', 'surgery', 'surgical', 'medicine',
+            'gastroenterology', 'pulmonology', 'nephrology', 'endocrinology',
+            'hematology', 'rheumatology', 'immunology',
+            // Short forms
+            'radiology', 'cardio', 'neuro', 'ortho', 'peds', 'onco', 'derm',
+            'gastro', 'pulmo', 'nephro', 'endo', 'hemato', 'rheum',
+            // Common hospital terms
+            'emergency', 'icu', 'opd', 'ot', 'operation', 'theater', 'theatre',
+            'department', 'dept', 'ward', 'room', 'unit', 'block', 'wing',
+            'pharmacy', 'laboratory', 'lab', 'reception', 'registration',
+            'admission', 'discharge', 'consultation', 'clinic', 'hospital',
+            'center', 'centre', 'medical', 'health', 'care',
+            // Equipment & Procedures
+            'x-ray', 'xray', 'ct scan', 'mri', 'ultrasound', 'sonography',
+            'ecg', 'ekg', 'echo', 'endoscopy', 'dialysis', 'scan', 'imaging',
+            'blood test', 'vaccine', 'vaccination', 'injection', 'therapy',
+            // Staff
+            'doctor', 'dr', 'nurse', 'patient', 'staff'
         ];
         
         const lowerText = text.toLowerCase();
         
-        // Check if text contains any medical keyword
-        const hasMedicalKeyword = medicalKeywords.some(keyword => lowerText.includes(keyword));
+        // Find ALL medical terms in the detected text
+        const foundTerms = [];
         
-        if (hasMedicalKeyword) {
-            console.log('✅ MEDICAL KEYWORD FOUND!');
-        } else {
-            console.log('⚠️ No medical keyword found, but will still process');
+        medicalTerms.forEach(term => {
+            if (lowerText.includes(term)) {
+                // Extract the actual word from text (with proper case)
+                const regex = new RegExp(`\\b${term}\\b`, 'gi');
+                const matches = text.match(regex);
+                if (matches) {
+                    matches.forEach(match => {
+                        if (!foundTerms.includes(match.toLowerCase())) {
+                            foundTerms.push(match);
+                        }
+                    });
+                }
+            }
+        });
+        
+        console.log('🔍 Found medical terms:', foundTerms);
+        
+        if (foundTerms.length === 0) {
+            console.log('❌ No medical terms found in:', text);
+            document.querySelector('#reader-text').textContent = 'No medical terms detected: ' + text;
+            return;
         }
         
-        // ACCEPT ALL TEXT - if it's detected, speak it!
-        // User wants to hear everything that's detected
+        // Speak only the medical terms found
+        const termsToSpeak = foundTerms.join(', ');
+        
+        console.log('✅ MEDICAL TERMS FOUND:', termsToSpeak);
         
         // Update UI
-        console.log('✅ Processing text:', text);
-        document.querySelector('#reader-text').textContent = text;
-        document.querySelector('#reader-last-detection').textContent = text;
+        document.querySelector('#reader-text').textContent = 'Detected: ' + text;
+        document.querySelector('#reader-last-detection').textContent = 'Medical terms: ' + termsToSpeak;
         
         // FORCE VOICE OUTPUT - Cancel any ongoing speech first
         console.log('🔇 Canceling previous speech...');
         window.speechSynthesis.cancel();
         
-        // Wait a bit for cancellation, then speak
+        // Wait a bit for cancellation, then speak ONLY the medical terms
         setTimeout(() => {
-            console.log('🔊 Speaking text:', text);
+            console.log('🔊 Speaking medical terms:', termsToSpeak);
             
             // Create speech utterance
-            const utterance = new SpeechSynthesisUtterance(text);
+            const utterance = new SpeechSynthesisUtterance(termsToSpeak);
             utterance.rate = 0.85; // Slightly slower for clarity
             utterance.volume = 1.0; // Maximum volume
             utterance.pitch = 1.0;
