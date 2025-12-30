@@ -712,42 +712,50 @@ class MediCareApp {
     }
     
     async startQRScanner() {
+        console.log('🎥 startQRScanner called');
+        
         // Stop existing scanner if any
         if (this.qrScanner && this.qrScannerActive) {
+            console.log('Stopping existing scanner...');
             await this.stopQRScanner();
         }
         
         try {
             const qrReader = document.querySelector('#qr-reader');
             if (!qrReader) {
-                console.error('QR reader element not found');
+                console.error('❌ QR reader element (#qr-reader) not found in DOM');
+                this.speak('QR scanner element not found. Please refresh the page.');
                 return;
             }
+            console.log('✅ QR reader element found');
             
             // Check if Html5Qrcode is available
             if (typeof Html5Qrcode === 'undefined') {
-                console.error('Html5Qrcode library not loaded');
-                this.speak('QR scanner library not available.');
+                console.error('❌ Html5Qrcode library not loaded');
+                this.speak('QR scanner library not available. Please refresh the page.');
                 return;
             }
+            console.log('✅ Html5Qrcode library loaded');
             
             // Request camera permission explicitly first (especially for mobile)
+            console.log('📸 Requesting camera permission...');
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ 
                     video: { facingMode: "environment" } 
                 });
                 // Stop the test stream immediately - we just wanted to get permission
                 stream.getTracks().forEach(track => track.stop());
-                console.log('Camera permission granted');
+                console.log('✅ Camera permission granted');
             } catch (permErr) {
-                console.error('Camera permission denied:', permErr);
+                console.error('❌ Camera permission denied:', permErr);
                 alert('Camera permission is required for QR scanning. Please allow camera access in your browser settings.');
                 this.speak('Camera permission denied. Please allow camera access.');
                 return;
             }
             
-            console.log('Initializing QR scanner...');
+            console.log('🔧 Initializing Html5Qrcode scanner...');
             this.qrScanner = new Html5Qrcode("qr-reader");
+            console.log('✅ Scanner object created');
             
             const config = {
                 fps: 10,
@@ -757,20 +765,23 @@ class MediCareApp {
             };
             
             // Get available cameras
+            console.log('📷 Getting available cameras...');
             const devices = await Html5Qrcode.getCameras();
-            console.log('Available cameras:', devices);
+            console.log('📷 Available cameras:', devices.length, devices);
             
             if (devices && devices.length > 0) {
                 // Use the last camera (usually back camera on mobile)
                 const cameraId = devices.length > 1 ? devices[devices.length - 1].id : devices[0].id;
+                console.log('📷 Using camera:', cameraId);
                 
                 // Start scanning with specific camera
+                console.log('▶️ Starting QR scanner...');
                 await this.qrScanner.start(
                     cameraId,
                     config,
                     (decodedText) => {
                         // QR code successfully scanned
-                        console.log('QR Code detected:', decodedText);
+                        console.log('✅ QR Code detected:', decodedText);
                         
                         // Vibrate if available
                         if (navigator.vibrate) {
@@ -786,17 +797,18 @@ class MediCareApp {
                 );
                 
                 this.qrScannerActive = true;
-                console.log('QR Scanner started successfully');
+                console.log('✅ QR Scanner started successfully!');
                 this.speak('QR scanner ready. Point camera at room QR code.');
             } else {
-                console.error('No cameras found');
+                console.error('❌ No cameras found');
                 this.speak('No camera found on this device.');
             }
             
         } catch (error) {
-            console.error('QR Scanner initialization error:', error);
+            console.error('❌ QR Scanner initialization error:', error);
+            console.error('Error details:', error.message, error.stack);
             this.qrScannerActive = false;
-            this.speak('Unable to start QR scanner. Error: ' + error.message);
+            this.speak('Unable to start QR scanner. ' + error.message);
         }
     }
     
