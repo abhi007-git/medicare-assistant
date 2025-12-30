@@ -955,11 +955,9 @@ class MediCareApp {
             
             this.speak('Camera activated. Point at medical signs. Text will be read automatically.');
             
-            // Start OCR detection after a brief delay for camera to stabilize
-            setTimeout(() => {
-                console.log('🚀 Starting OCR detection...');
-                this.startOCRDetection();
-            }, 500);
+            // Start OCR detection immediately
+            console.log('🚀 Starting OCR detection...');
+            this.startOCRDetection();
         } catch (error) {
             console.error('❌ Camera error:', error);
             this.speak('Unable to access camera. Please allow camera permission.');
@@ -1011,9 +1009,9 @@ class MediCareApp {
     async continuousOCRScan() {
         if (!this.readerActive) return;
         
-        // If in cooldown, wait and try again
+        // If in cooldown, skip and check again immediately
         if (this.scanCooldown) {
-            setTimeout(() => this.continuousOCRScan(), 100);
+            this.continuousOCRScan();
             return;
         }
         
