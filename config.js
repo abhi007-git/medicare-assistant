@@ -5,7 +5,7 @@
 const API_CONFIG = {
     // OCR SERVICE CONFIGURATION
     // Choose one: 'tesseract' (free, client-side), 'google', 'azure', 'ocrspace'
-    OCR_SERVICE: 'azure', // Using Azure Computer Vision API
+    OCR_SERVICE: 'tesseract', // Using Tesseract.js - Works immediately, no API key needed!
     
     // ==========================================================================
     // OPTION 1: TESSERACT.JS (Client-side, FREE, NO API KEY NEEDED)

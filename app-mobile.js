@@ -974,13 +974,13 @@ class MediCareApp {
     startOCRDetection() {
         if (!this.readerActive) return;
         
-        // Perform OCR every 3 seconds
+        // Perform OCR every 2 seconds for faster detection
         setTimeout(async () => {
             if (this.readerActive) {
                 await this.performOCR();
                 this.startOCRDetection(); // Continue checking
             }
-        }, 3000);
+        }, 2000);
     }
     
     async performOCR() {
@@ -1039,18 +1039,59 @@ class MediCareApp {
     
     async ocrWithTesseract(canvas) {
         // Tesseract.js - Client-side OCR (FREE, NO API KEY)
+        console.log('📚 Tesseract OCR: Starting...');
+        
         if (typeof Tesseract === 'undefined') {
-            console.error('Tesseract.js not loaded');
+            console.error('❌ Tesseract.js not loaded');
+            this.speak('Tesseract library not loaded. Please refresh the page.');
             return '';
         }
         
         try {
-            const result = await Tesseract.recognize(canvas, 'eng', {
-                logger: m => console.log(m)
+            console.log('🔧 Preprocessing image for better OCR...');
+            
+            // Enhance image for better OCR
+            const enhancedCanvas = document.createElement('canvas');
+            enhancedCanvas.width = canvas.width;
+            enhancedCanvas.height = canvas.height;
+            const ctx = enhancedCanvas.getContext('2d');
+            
+            // Draw original
+            ctx.drawImage(canvas, 0, 0);
+            
+            // Apply filters for better text detection
+            const imageData = ctx.getImageData(0, 0, enhancedCanvas.width, enhancedCanvas.height);
+            const data = imageData.data;
+            
+            // Increase contrast and brightness
+            for (let i = 0; i < data.length; i += 4) {
+                // Convert to grayscale with high contrast
+                const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
+                const contrast = avg > 128 ? 255 : 0; // Binary threshold
+                data[i] = data[i + 1] = data[i + 2] = contrast;
+            }
+            
+            ctx.putImageData(imageData, 0, 0);
+            
+            console.log('📖 Running Tesseract recognition...');
+            
+            const result = await Tesseract.recognize(enhancedCanvas, 'eng', {
+                logger: m => {
+                    if (m.status === 'recognizing text') {
+                        console.log(`   Progress: ${Math.round(m.progress * 100)}%`);
+                    }
+                },
+                tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 -.,',
+                tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK
             });
+            
+            console.log('✅ Tesseract completed');
+            console.log('📝 Confidence:', result.data.confidence);
+            console.log('📝 Text:', result.data.text);
+            
             return result.data.text;
         } catch (error) {
-            console.error('Tesseract error:', error);
+            console.error('❌ Tesseract error:', error);
             return '';
         }
     }
