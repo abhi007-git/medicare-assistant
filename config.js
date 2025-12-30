@@ -38,14 +38,21 @@ const API_CONFIG = {
     // ==========================================================================
     // OPTION 4: MICROSOFT AZURE COMPUTER VISION (ACTIVE)
     // ==========================================================================
-    // Get API key from: https://portal.azure.com/
-    // 1. Create "Computer Vision" resource
-    // 2. Go to "Keys and Endpoint" section
-    // 3. Copy Key 1 and Endpoint URL
-    // Free tier: 5,000 transactions/month
+    // SETUP INSTRUCTIONS:
+    // 1. Go to https://portal.azure.com/
+    // 2. Create "Computer Vision" resource (Free F0 tier available)
+    // 3. After creation, go to "Keys and Endpoint"
+    // 4. Copy "KEY 1" and paste below (replace YOUR_AZURE_KEY_HERE)
+    // 5. Copy "Endpoint" URL and paste below (replace YOUR_RESOURCE_NAME)
+    // 6. Save this file, commit and push to GitHub
+    //
+    // Example values:
+    // API_KEY: '1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p'
+    // ENDPOINT: 'https://myresource.cognitiveservices.azure.com/'
+    //
     AZURE_VISION: {
-        API_KEY: 'YOUR_AZURE_KEY_HERE', // Example: '1234567890abcdef1234567890abcdef'
-        ENDPOINT: 'https://YOUR_RESOURCE_NAME.cognitiveservices.azure.com/', // Keep the trailing slash
+        API_KEY: 'YOUR_AZURE_KEY_HERE', // REPLACE with your actual Azure key
+        ENDPOINT: 'https://YOUR_RESOURCE_NAME.cognitiveservices.azure.com/', // REPLACE with your endpoint
         URL_SUFFIX: '/vision/v3.2/ocr'
     }
 };

@@ -940,8 +940,11 @@ class MediCareApp {
         try {
             const video = document.querySelector('#reader-camera');
             if (!video || video.readyState !== video.HAVE_ENOUGH_DATA) {
+                console.log('Video not ready for OCR');
                 return; // Video not ready
             }
+            
+            console.log('📸 Capturing frame for OCR...');
             
             // Capture frame from video
             const canvas = document.createElement('canvas');
@@ -952,28 +955,38 @@ class MediCareApp {
             
             // Check which OCR service to use
             const ocrService = window.API_CONFIG?.OCR_SERVICE || 'tesseract';
+            console.log('🔍 Using OCR service:', ocrService);
             
             let text = '';
             
             if (ocrService === 'tesseract') {
                 // Use Tesseract.js (client-side, no API key needed)
+                console.log('Running Tesseract OCR...');
                 text = await this.ocrWithTesseract(canvas);
             } else if (ocrService === 'ocrspace') {
                 // Use OCR.space API
+                console.log('Running OCR.space API...');
                 text = await this.ocrWithOCRSpace(canvas);
             } else if (ocrService === 'google') {
                 // Use Google Cloud Vision API
+                console.log('Running Google Vision API...');
                 text = await this.ocrWithGoogleVision(canvas);
             } else if (ocrService === 'azure') {
                 // Use Azure Computer Vision API
+                console.log('Running Azure Vision API...');
                 text = await this.ocrWithAzure(canvas);
             }
             
+            console.log('📄 OCR Result:', text);
+            
             if (text && text.trim()) {
+                console.log('✅ Text detected, processing...');
                 this.handleDetectedText(text.trim());
+            } else {
+                console.log('❌ No text detected');
             }
         } catch (error) {
-            console.error('OCR error:', error);
+            console.error('❌ OCR error:', error);
         }
     }
     
@@ -1057,17 +1070,30 @@ class MediCareApp {
     
     async ocrWithAzure(canvas) {
         // Microsoft Azure Computer Vision API
+        console.log('🔷 Azure OCR: Starting...');
+        
         const config = window.API_CONFIG?.AZURE_VISION;
         if (!config || !config.API_KEY || !config.ENDPOINT) {
-            console.error('Azure Vision API key/endpoint not configured');
+            console.error('❌ Azure Vision API key/endpoint not configured');
+            console.log('Config:', config);
             this.speak('Azure Vision API not configured. Please add your API key and endpoint in config.js');
             return '';
         }
         
+        console.log('🔷 Azure config found:', {
+            endpoint: config.ENDPOINT,
+            hasKey: !!config.API_KEY,
+            keyLength: config.API_KEY?.length
+        });
+        
         try {
             const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.95));
+            console.log('🔷 Image blob created, size:', blob.size);
             
-            const response = await fetch(`${config.ENDPOINT}${config.URL_SUFFIX}`, {
+            const url = `${config.ENDPOINT}${config.URL_SUFFIX}`;
+            console.log('🔷 Calling Azure API:', url);
+            
+            const response = await fetch(url, {
                 method: 'POST',
                 headers: {
                     'Ocp-Apim-Subscription-Key': config.API_KEY,
@@ -1076,7 +1102,18 @@ class MediCareApp {
                 body: blob
             });
             
+            console.log('🔷 Azure response status:', response.status, response.statusText);
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('❌ Azure API error:', errorText);
+                this.speak('Azure API error: ' + response.statusText);
+                return '';
+            }
+            
             const result = await response.json();
+            console.log('🔷 Azure result:', result);
+            
             const regions = result.regions || [];
             let text = '';
             regions.forEach(region => {
@@ -1087,9 +1124,12 @@ class MediCareApp {
                     text += '\n';
                 });
             });
-            return text;
+            
+            console.log('🔷 Extracted text:', text);
+            return text.trim();
         } catch (error) {
-            console.error('Azure Vision error:', error);
+            console.error('❌ Azure Vision error:', error);
+            this.speak('Azure API connection failed: ' + error.message);
             return '';
         }
     }
@@ -1146,12 +1186,39 @@ class MediCareApp {
         }
         
         // Valid text - speak it with voice
-        console.log('Valid hospital text detected:', text);
+        console.log('✅ Valid hospital text detected:', text);
         document.querySelector('#reader-text').textContent = text;
         document.querySelector('#reader-last-detection').textContent = text;
         
-        // Speak the text clearly
-        this.speak(text, true); // Force immediate speech
+        // Cancel any ongoing speech first
+        window.speechSynthesis.cancel();
+        
+        // Small delay to ensure cancellation completed
+        setTimeout(() => {
+            console.log('🔊 Speaking:', text);
+            // Speak the text clearly with priority
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = this.voiceSpeed || 0.9;
+            utterance.volume = this.voiceVolume || 1.0;
+            utterance.pitch = 1.0;
+            utterance.lang = 'en-US';
+            
+            utterance.onstart = () => {
+                console.log('🔊 Speech started');
+                this.isSpeaking = true;
+            };
+            
+            utterance.onend = () => {
+                console.log('🔊 Speech ended');
+                this.isSpeaking = false;
+            };
+            
+            utterance.onerror = (e) => {
+                console.error('❌ Speech error:', e);
+            };
+            
+            window.speechSynthesis.speak(utterance);
+        }, 100);
         
         // Also vibrate for feedback
         if (navigator.vibrate) {
