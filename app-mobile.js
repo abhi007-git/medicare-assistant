@@ -1339,85 +1339,94 @@ class MediCareApp {
         
         const lowerText = text.toLowerCase();
         
-        // Find ALL medical terms in the detected text
+        // Find ALL medical terms in the detected text (LENIENT - no word boundaries)
         const foundTerms = [];
+        const foundTermsLower = new Set();
         
         medicalTerms.forEach(term => {
             if (lowerText.includes(term)) {
-                // Extract the actual word from text (with proper case)
-                const regex = new RegExp(`\\b${term}\\b`, 'gi');
-                const matches = text.match(regex);
-                if (matches) {
-                    matches.forEach(match => {
-                        if (!foundTerms.includes(match.toLowerCase())) {
-                            foundTerms.push(match);
-                        }
-                    });
+                // Found the term! Extract it with original case from text
+                const termLower = term.toLowerCase();
+                const index = lowerText.indexOf(termLower);
+                
+                if (index !== -1 && !foundTermsLower.has(termLower)) {
+                    // Extract the term with its original capitalization
+                    const extractedTerm = text.substr(index, term.length);
+                    foundTerms.push(extractedTerm);
+                    foundTermsLower.add(termLower);
+                    console.log(`   ✅ Found: "${extractedTerm}" (from term: "${term}")`);
                 }
             }
         });
         
-        console.log('🔍 Found medical terms:', foundTerms);
+        console.log('🔍 Total medical terms found:', foundTerms.length, '→', foundTerms);
         
         if (foundTerms.length === 0) {
             console.log('❌ No medical terms found in:', text);
-            document.querySelector('#reader-text').textContent = 'No medical terms detected: ' + text;
+            document.querySelector('#reader-text').textContent = 'Scanning... (no medical terms)';
             return;
         }
         
         // Speak only the medical terms found
         const termsToSpeak = foundTerms.join(', ');
+        console.log('🎯 Terms to speak:', termsToSpeak);
         
-        console.log('✅ MEDICAL TERMS FOUND:', termsToSpeak);
+        console.log('✅✅✅ MEDICAL TERMS FOUND:', termsToSpeak);
+        console.log('🔊🔊🔊 WILL SPEAK NOW:', termsToSpeak);
         
         // Update UI
-        document.querySelector('#reader-text').textContent = 'Detected: ' + text;
-        document.querySelector('#reader-last-detection').textContent = 'Medical terms: ' + termsToSpeak;
+        document.querySelector('#reader-text').textContent = '✅ Detected: ' + text;
+        document.querySelector('#reader-last-detection').textContent = '🔊 Speaking: ' + termsToSpeak;
         
-        // FORCE VOICE OUTPUT - Cancel any ongoing speech first
-        console.log('🔇 Canceling previous speech...');
+        // IMMEDIATE VOICE OUTPUT - Multiple attempts to ensure it speaks!
+        console.log('🔇 Step 1: Canceling any previous speech...');
         window.speechSynthesis.cancel();
         
-        // Wait a bit for cancellation, then speak ONLY the medical terms
+        // Try immediate speech first
+        console.log('🔊 Step 2: Attempting immediate speech...');
+        this.speakMedicalTerm(termsToSpeak);
+        
+        // Also try after delay as backup
         setTimeout(() => {
-            console.log('🔊 Speaking medical terms:', termsToSpeak);
-            
-            // Create speech utterance
-            const utterance = new SpeechSynthesisUtterance(termsToSpeak);
-            utterance.rate = 0.85; // Slightly slower for clarity
-            utterance.volume = 1.0; // Maximum volume
-            utterance.pitch = 1.0;
-            utterance.lang = 'en-US';
-            
-            utterance.onstart = () => {
-                console.log('✅ Speech started');
-                this.isSpeaking = true;
-            };
-            
-            utterance.onend = () => {
-                console.log('✅ Speech completed');
-                this.isSpeaking = false;
-            };
-            
-            utterance.onerror = (e) => {
-                console.error('❌ Speech error:', e.error, e);
-                // Retry once if failed
-                if (e.error === 'interrupted') {
-                    console.log('🔄 Retrying speech...');
-                    window.speechSynthesis.speak(utterance);
-                }
-            };
-            
-            // Speak it!
-            window.speechSynthesis.speak(utterance);
-            console.log('🎤 Speech queued');
-        }, 200);
+            console.log('🔊 Step 3: Backup speech attempt...');
+            this.speakMedicalTerm(termsToSpeak);
+        }, 100);
         
         // Vibrate for feedback
         if (navigator.vibrate) {
-            navigator.vibrate([200, 100, 200]);
-            console.log('📳 Vibration triggered');
+            navigator.vibrate([300, 100, 300, 100, 300]);
+            console.log('📳 Vibration triggered (3 times)');
         }
+    }
+    
+    speakMedicalTerm(text) {
+        console.log('🎤 speakMedicalTerm called with:', text);
+        
+        // Create speech utterance
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 0.8; // Slower for clarity
+        utterance.volume = 1.0; // Maximum volume
+        utterance.pitch = 1.0;
+        utterance.lang = 'en-US';
+        
+        utterance.onstart = () => {
+            console.log('✅✅✅ SPEECH STARTED:', text);
+            this.isSpeaking = true;
+        };
+        
+        utterance.onend = () => {
+            console.log('✅ Speech completed');
+            this.isSpeaking = false;
+        };
+        
+        utterance.onerror = (e) => {
+            console.error('❌ Speech error:', e.error, e);
+        };
+        
+        // SPEAK IT!
+        console.log('🔊 Calling speechSynthesis.speak()...');
+        window.speechSynthesis.speak(utterance);
+        console.log('🎤 Speech queued successfully');
     }
     
     speakLastDetection() {
