@@ -1088,7 +1088,7 @@ class MediCareApp {
         if (!config || !config.API_KEY || !config.ENDPOINT) {
             console.error('❌ Azure Vision API key/endpoint not configured');
             console.log('Config:', config);
-            this.speak('Azure Vision API not configured. Please add your API key and endpoint in config.js');
+            this.speak('Azure Vision API not configured. Please add your API key and endpoint in config dot j s file.');
             return '';
         }
         
@@ -1099,10 +1099,33 @@ class MediCareApp {
         });
         
         try {
-            const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.95));
-            console.log('🔷 Image blob created, size:', blob.size);
+            // Enhance image quality before sending
+            const enhancedCanvas = document.createElement('canvas');
+            enhancedCanvas.width = canvas.width;
+            enhancedCanvas.height = canvas.height;
+            const ctx = enhancedCanvas.getContext('2d');
             
-            const url = `${config.ENDPOINT}${config.URL_SUFFIX}`;
+            // Draw original image
+            ctx.drawImage(canvas, 0, 0);
+            
+            // Increase contrast for better OCR
+            const imageData = ctx.getImageData(0, 0, enhancedCanvas.width, enhancedCanvas.height);
+            const data = imageData.data;
+            const factor = 1.2; // Contrast factor
+            
+            for (let i = 0; i < data.length; i += 4) {
+                data[i] = Math.min(255, Math.max(0, factor * (data[i] - 128) + 128));     // Red
+                data[i + 1] = Math.min(255, Math.max(0, factor * (data[i + 1] - 128) + 128)); // Green
+                data[i + 2] = Math.min(255, Math.max(0, factor * (data[i + 2] - 128) + 128)); // Blue
+            }
+            
+            ctx.putImageData(imageData, 0, 0);
+            
+            // Convert to blob with high quality
+            const blob = await new Promise(resolve => enhancedCanvas.toBlob(resolve, 'image/jpeg', 0.95));
+            console.log('🔷 Enhanced image blob created, size:', blob.size);
+            
+            const url = `${config.ENDPOINT}${config.URL_SUFFIX}?language=en&detectOrientation=true`;
             console.log('🔷 Calling Azure API:', url);
             
             const response = await fetch(url, {
@@ -1119,29 +1142,45 @@ class MediCareApp {
             if (!response.ok) {
                 const errorText = await response.text();
                 console.error('❌ Azure API error:', errorText);
-                this.speak('Azure API error: ' + response.statusText);
+                this.speak('Azure API error. Status: ' + response.status);
                 return '';
             }
             
             const result = await response.json();
             console.log('🔷 Azure result:', result);
             
+            // Extract text from regions
             const regions = result.regions || [];
             let text = '';
+            let allWords = [];
+            
             regions.forEach(region => {
                 region.lines.forEach(line => {
+                    let lineText = [];
                     line.words.forEach(word => {
-                        text += word.text + ' ';
+                        lineText.push(word.text);
+                        allWords.push(word.text);
                     });
-                    text += '\n';
+                    text += lineText.join(' ') + ' ';
                 });
             });
             
+            text = text.trim();
+            
+            // If no text found, try getting it from the language property
+            if (!text && result.language) {
+                console.log('🔷 Trying alternative text extraction...');
+                text = allWords.join(' ');
+            }
+            
             console.log('🔷 Extracted text:', text);
+            console.log('🔷 Word count:', allWords.length);
+            
             return text.trim();
         } catch (error) {
             console.error('❌ Azure Vision error:', error);
-            this.speak('Azure API connection failed: ' + error.message);
+            console.error('Error stack:', error.stack);
+            this.speak('Azure API connection failed. Please check your internet connection.');
             return '';
         }
     }
@@ -1152,89 +1191,108 @@ class MediCareApp {
             return; // Silent - no text detected
         }
         
-        // Clean up the text
-        text = text.trim();
+        // Clean up the text - remove extra spaces and newlines
+        text = text.trim().replace(/\s+/g, ' ');
         
         // Log detected text for debugging
-        console.log('Detected text:', text);
+        console.log('📝 Detected text (cleaned):', text);
         
-        // Expanded hospital-related keywords (more flexible matching)
-        const hospitalKeywords = [
-            'department', 'dept', 'ward', 'room', 'emergency', 'radiology', 'cardiology',
-            'orthopedics', 'ortho', 'pediatrics', 'neurology', 'pharmacy', 'laboratory', 'lab',
-            'reception', 'registration', 'icu', 'operation', 'theater', 'exit', 'opd',
-            'entrance', 'waiting', 'consultation', 'vaccination', 'blood', 'bank',
-            'x-ray', 'xray', 'ct', 'scan', 'mri', 'ambulance', 'cafeteria', 'restroom',
-            'elevator', 'lift', 'stairs', 'parking', 'hospital', 'clinic', 'medical',
-            'doctor', 'nurse', 'patient', 'bed', 'floor', 'wing', 'unit', 'center',
-            'surgery', 'outpatient', 'inpatient', 'maternity', 'neonatal', 'intensive',
-            'care', 'diagnostic', 'imaging', 'therapy', 'rehabilitation', 'casualty',
-            'trauma', 'admin', 'office', 'info', 'information', 'help', 'desk',
-            'general', 'special', 'medicine', 'surgical', 'oncology', 'dermatology',
-            'gynecology', 'urology', 'ophthalmology', 'ent', 'dental', 'physiotherapy',
-            // Numbers and letters (for room numbers like "Room 101", "Ward A")
-            '1', '2', '3', '4', '5', '6', '7', '8', '9', '0',
-            'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'
+        // If text is too short (less than 2 characters), likely noise
+        if (text.length < 2) {
+            console.log('⚠️ Text too short, ignoring');
+            return;
+        }
+        
+        // Medical and hospital-related keywords (comprehensive list)
+        const medicalKeywords = [
+            // Departments
+            'radiology', 'cardiology', 'neurology', 'orthopedics', 'pediatrics',
+            'oncology', 'dermatology', 'gynecology', 'urology', 'ophthalmology',
+            'psychiatry', 'pathology', 'anesthesiology', 'surgery',
+            // Common terms
+            'department', 'dept', 'ward', 'room', 'emergency', 'icu', 'opd',
+            'pharmacy', 'laboratory', 'lab', 'reception', 'registration',
+            'operation', 'theater', 'exit', 'entrance', 'waiting', 'consultation',
+            'doctor', 'nurse', 'patient', 'bed', 'floor', 'wing', 'unit',
+            'clinic', 'hospital', 'medical', 'care', 'center', 'diagnostic',
+            // Procedures & Equipment
+            'x-ray', 'xray', 'ct', 'mri', 'scan', 'ultrasound', 'ecg', 'ekg',
+            'blood', 'test', 'imaging', 'therapy', 'treatment',
+            // Directions
+            'left', 'right', 'straight', 'turn', 'ahead', 'stairs', 'lift',
+            'elevator', 'parking', 'restroom', 'toilet', 'cafeteria',
+            // Partial matches
+            'ology', 'ics', 'tion', 'ment', 'ical'
         ];
         
         const lowerText = text.toLowerCase();
         
-        // More flexible validation:
-        // 1. Check if text contains any hospital keyword
-        // 2. OR if text is short (likely a sign like "ICU", "OPD", etc.)
-        // 3. OR if text contains numbers (room numbers, floor numbers)
-        const hasKeyword = hospitalKeywords.some(keyword => lowerText.includes(keyword));
-        const isShortSign = text.length <= 30; // Short signs are likely hospital signs
-        const hasNumbers = /\d/.test(text); // Contains numbers
+        // Check if text contains any medical keyword
+        const hasMedicalKeyword = medicalKeywords.some(keyword => lowerText.includes(keyword));
         
-        const isValid = hasKeyword || (isShortSign && hasNumbers) || isShortSign;
+        // Be more lenient - accept text if:
+        // 1. Contains medical keyword OR
+        // 2. Text is reasonably short (likely a sign) OR  
+        // 3. Contains numbers (room/floor numbers)
+        const hasNumbers = /\d/.test(text);
+        const isReasonableLength = text.length >= 2 && text.length <= 50;
+        
+        // Accept almost anything that looks like it could be a sign
+        const isValid = hasMedicalKeyword || (isReasonableLength && hasNumbers) || isReasonableLength;
         
         if (!isValid) {
-            // Only reject if text is clearly not hospital-related
-            console.log('Rejected as non-hospital text:', text);
-            this.speak('Invalid. This is not a hospital sign.');
-            document.querySelector('#reader-last-detection').textContent = 'Invalid: Non-hospital text';
+            console.log('❌ Text rejected:', text);
             return;
         }
         
-        // Valid text - speak it with voice
-        console.log('✅ Valid hospital text detected:', text);
+        // Valid text detected - update UI
+        console.log('✅ Valid text detected:', text);
         document.querySelector('#reader-text').textContent = text;
         document.querySelector('#reader-last-detection').textContent = text;
         
-        // Cancel any ongoing speech first
+        // FORCE VOICE OUTPUT - Cancel any ongoing speech first
+        console.log('🔇 Canceling previous speech...');
         window.speechSynthesis.cancel();
         
-        // Small delay to ensure cancellation completed
+        // Wait a bit for cancellation, then speak
         setTimeout(() => {
-            console.log('🔊 Speaking:', text);
-            // Speak the text clearly with priority
+            console.log('🔊 Speaking text:', text);
+            
+            // Create speech utterance
             const utterance = new SpeechSynthesisUtterance(text);
-            utterance.rate = this.voiceSpeed || 0.9;
-            utterance.volume = this.voiceVolume || 1.0;
+            utterance.rate = 0.85; // Slightly slower for clarity
+            utterance.volume = 1.0; // Maximum volume
             utterance.pitch = 1.0;
             utterance.lang = 'en-US';
             
             utterance.onstart = () => {
-                console.log('🔊 Speech started');
+                console.log('✅ Speech started');
                 this.isSpeaking = true;
             };
             
             utterance.onend = () => {
-                console.log('🔊 Speech ended');
+                console.log('✅ Speech completed');
                 this.isSpeaking = false;
             };
             
             utterance.onerror = (e) => {
-                console.error('❌ Speech error:', e);
+                console.error('❌ Speech error:', e.error, e);
+                // Retry once if failed
+                if (e.error === 'interrupted') {
+                    console.log('🔄 Retrying speech...');
+                    window.speechSynthesis.speak(utterance);
+                }
             };
             
+            // Speak it!
             window.speechSynthesis.speak(utterance);
-        }, 100);
+            console.log('🎤 Speech queued');
+        }, 200);
         
-        // Also vibrate for feedback
+        // Vibrate for feedback
         if (navigator.vibrate) {
             navigator.vibrate([200, 100, 200]);
+            console.log('📳 Vibration triggered');
         }
     }
     
