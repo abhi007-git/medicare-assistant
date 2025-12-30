@@ -1009,17 +1009,17 @@ class MediCareApp {
     async continuousOCRScan() {
         if (!this.readerActive) return;
         
-        // If in cooldown, skip and check again immediately
+        // If in cooldown, wait 1 second and check again
         if (this.scanCooldown) {
-            this.continuousOCRScan();
+            setTimeout(() => this.continuousOCRScan(), 1000);
             return;
         }
         
-        // Perform scan immediately - no delay!
+        // Perform scan
         await this.performOCR();
         
-        // Immediately start next scan (no delay between scans)
-        this.continuousOCRScan();
+        // Small delay to prevent blocking - keeps it smooth
+        setTimeout(() => this.continuousOCRScan(), 100);
     }
     
     async performOCR() {
